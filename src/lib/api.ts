@@ -1,30 +1,26 @@
 
 const getBaseUrl = () => {
-  // 1. Check for manual override in .env
+  // 1. Check for manual override in .env or localStorage (highest priority)
   const meta = import.meta as any;
   const envUrl = meta.env ? meta.env.VITE_API_URL : null;
   if (envUrl) return envUrl;
 
-  // 2. Priority: Manual override in LocalStorage (set via App Settings UI)
   if (typeof window !== 'undefined') {
     const savedUrl = localStorage.getItem('scm_remote_api_url');
     if (savedUrl) return savedUrl;
 
     const origin = window.location.origin;
     const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
-    const isCapacitor = !!(window as any).Capacitor;
 
-    // 3. If in browser and NOT localhost, use the current origin
-    if (typeof window !== 'undefined' && !isLocalhost && !isCapacitor) {
-      return window.location.origin;
+    // 2. If we're in a browser/webapp, use current origin
+    // This handles both the preview URL and any custom domain
+    if (origin.startsWith('http')) {
+      return origin;
     }
 
-    // 4. Default Fallback for APK/Capacitor/Other
-    // THIS URL MUST BE THE PUBLIC SHARED URL
-    // IF we are in a browser on any origin, use that origin instead of falling back
-    if (typeof window !== 'undefined') return window.location.origin;
-
-    return 'https://scm-inspection-app.onrender.com';
+    // 3. Fallback for mobile apps (where origin might be local)
+    // Try to guess the server URL from the current window location if available
+    return 'https://scm-inspection-app.onrender.com'; // Absolute fallback
   }
 
   return '';
@@ -35,13 +31,13 @@ export const getApiUrl = (path: string): string => {
   
   let cleanPath = path;
 
-  // Fix legacy hardcoded localhost URLs that might be stored in the database
+  // Fix legacy hardcoded localhost URLs
   if (cleanPath.startsWith('http://localhost:5173') || cleanPath.startsWith('http://localhost:3000')) {
     const url = new URL(cleanPath);
     cleanPath = url.pathname;
   }
 
-  // If it's already an absolute URL (including data URIs) and not a localhost one we just fixed
+  // If it's already an absolute URL or data URI
   if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://') || cleanPath.startsWith('data:')) {
     return cleanPath;
   }
@@ -49,17 +45,18 @@ export const getApiUrl = (path: string): string => {
   // Ensure path starts with /
   const absolutePath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
   
-  // If we're in the browser, always use relative paths
+  // ALWAYS return relative path in browser to let browser handle the origin
+  // This is the most robust way for proxying and multi-environment support
   if (typeof window !== 'undefined') {
     return absolutePath;
   }
 
-  // Server-side context (if any)
+  // Server-side context fallback
   const baseUrl = getBaseUrl();
   if (baseUrl) {
     const divider = baseUrl.endsWith('/') ? '' : '/';
-    const relativePath = absolutePath.startsWith('/') ? absolutePath.substring(1) : absolutePath;
-    return `${baseUrl}${divider}${relativePath}`;
+    const relativePart = absolutePath.startsWith('/') ? absolutePath.substring(1) : absolutePath;
+    return `${baseUrl}${divider}${relativePart}`;
   }
   
   return absolutePath;

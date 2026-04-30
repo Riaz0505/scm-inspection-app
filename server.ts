@@ -347,11 +347,17 @@ app.get("/api/stats/style/:barcode", async (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
+  const mongoStatus = MONGODB_URI 
+    ? (mongoose.connection.readyState === 1 ? "connected" : mongoose.connection.readyState === 2 ? "connecting" : "disconnected") 
+    : "not_configured";
+    
   res.json({ 
     status: "ok", 
     mode: process.env.NODE_ENV || 'development',
-    mongo: MONGODB_URI ? "configured" : "mock",
-    time: new Date().toISOString()
+    mongo: mongoStatus,
+    time: new Date().toISOString(),
+    dataDirExists: fs.existsSync(DATA_DIR),
+    uploadsDirExists: fs.existsSync(uploadsDir)
   });
 });
 
@@ -472,6 +478,8 @@ app.post("/api/styles", async (req, res) => {
 
     if (MONGODB_URI && mongoose.connection.readyState === 1) {
       const { barcode } = styleData;
+      if (!barcode) return res.status(400).json({ message: "Barcode is required" });
+      
       const existing = await StyleModel.findOne({ barcode });
       if (existing) {
         Object.assign(existing, styleData);
@@ -483,20 +491,26 @@ app.post("/api/styles", async (req, res) => {
       res.status(201).json(newStyle);
     } else {
       const styles = readJsonFile(STYLES_FILE, []);
+      const barcodeToMatch = (styleData.barcode || "").toString().trim().toLowerCase();
+      
+      if (!barcodeToMatch) return res.status(400).json({ message: "Barcode is required" });
+
       const index = styles.findIndex((s: any) => 
-        s.barcode && s.barcode.toString().trim().toLowerCase() === styleData.barcode.toLowerCase()
+        s.barcode && s.barcode.toString().trim().toLowerCase() === barcodeToMatch
       );
+      
       if (index !== -1) {
         styles[index] = { ...styles[index], ...styleData };
       } else {
         styles.push({ id: Date.now().toString(), ...styleData });
       }
       fs.writeFileSync(STYLES_FILE, JSON.stringify(styles, null, 2));
+      console.log(`✅ Style saved to local JSON: ${barcodeToMatch}`);
       res.json(styleData);
     }
-  } catch (error) {
-    console.error("Save Style Error:", error);
-    res.status(500).json({ message: "Failed to save style" });
+  } catch (error: any) {
+    console.error("❌ Save Style Error:", error.message);
+    res.status(500).json({ message: "Failed to save style", error: error.message });
   }
 });
 
