@@ -1,0 +1,8 @@
+{
+  "name": "Remix: SCM Garments QC System",
+  "description": "A professional quality control system for SCM Garments featuring 3D product inspection, barcode scanning, and real-time defect reporting.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

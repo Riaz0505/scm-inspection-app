@@ -1,0 +1,30 @@
+[
+  {
+    "id": "1777285181970",
+    "styleId": "456123",
+    "styleName": "round neck",
+    "layoutImage": "/uploads/image-1777283850271-748455622.jpg",
+    "category": "Stitching Issues",
+    "subCategory": "left sleve: Loose Threads | left sleve: Broken Stitches",
+    "part": "left sleve",
+    "defects": [
+      {
+        "category": "Stitching Issues",
+        "subCategory": "Loose Threads",
+        "imageUrl": "https://picsum.photos/seed/loose/400/300",
+        "part": "left sleve"
+      },
+      {
+        "category": "Stitching Issues",
+        "subCategory": "Broken Stitches",
+        "imageUrl": "https://picsum.photos/seed/broken/400/300",
+        "part": "left sleve"
+      }
+    ],
+    "status": "pending",
+    "reporterEmail": "admin@scmgarments.com",
+    "reporterUid": "admin-id",
+    "notes": "",
+    "createdAt": "2026-04-27T10:19:41.970Z"
+  }
+]

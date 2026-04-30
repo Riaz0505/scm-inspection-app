@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Styles & Categories: Publicly readable, admin writable
+    match /styles/{styleId} {
+      allow read: if true;
+      allow write: if true; // In demo mode, let operators add styles. IRL: isAdmin()
+    }
+    
+    match /categories/{catId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Reports validation
+    function isValidReport(data) {
+      return data.keys().hasAll(['styleId', 'defects', 'createdAt']) &&
+             data.styleId is string &&
+             data.defects is list &&
+             data.createdAt is string;
+    }
+
+    match /reports/{reportId} {
+      allow read: if true;
+      allow create: if isValidReport(incoming());
+      allow update: if isValidReport(incoming()) && 
+                    (incoming().diff(existing()).affectedKeys().hasOnly(['status']));
+      allow delete: if false;
+    }
+  }
+}

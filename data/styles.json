@@ -1,0 +1,46 @@
+[
+  {
+    "barcode": "123456",
+    "name": "Classic T",
+    "type": "tshirt"
+  },
+  {
+    "id": "1777283852186",
+    "type": "tshirt",
+    "barcode": "456123",
+    "name": "round neck",
+    "layoutImage": "/uploads/image-1777283850271-748455622.jpg",
+    "customPoints": [
+      {
+        "id": "A",
+        "label": "right sleve",
+        "x": 76.38,
+        "y": 45.11
+      },
+      {
+        "id": "B",
+        "label": "left sleve",
+        "x": 50.28,
+        "y": 12.39
+      },
+      {
+        "id": "C",
+        "label": "top",
+        "x": 18.84,
+        "y": 39.41
+      },
+      {
+        "id": "D",
+        "label": "bottom",
+        "x": 47.89,
+        "y": 89.41
+      },
+      {
+        "id": "E",
+        "label": "middle",
+        "x": 51.19,
+        "y": 52.83
+      }
+    ]
+  }
+]

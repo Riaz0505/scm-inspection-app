@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "Report": {
+      "title": "Inspection Report",
+      "description": "A report of defects found on a garment style",
+      "type": "object",
+      "properties": {
+        "styleId": { "type": "string" },
+        "styleName": { "type": "string" },
+        "layoutImage": { "type": "string" },
+        "reporterEmail": { "type": "string" },
+        "reporterUid": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved", "flagged"] },
+        "defects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category": { "type": "string" },
+              "subCategory": { "type": "string" },
+              "part": { "type": "string" },
+              "imageUrl": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["styleId", "defects", "createdAt"]
+    },
+    "Style": {
+      "title": "Garment Style",
+      "description": "A style template for garments",
+      "type": "object",
+      "properties": {
+        "barcode": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "layoutImage": { "type": "string" },
+        "customPoints": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["barcode", "name"]
+    },
+    "Category": {
+      "title": "Defect Category",
+      "description": "A category of possible defects",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "icon": { "type": "string" },
+        "subCategories": { "type": "array" }
+      }
+    }
+  },
+  "firestore": {
+    "/reports": {
+      "schema": "Report",
+      "description": "Collection of all inspection reports"
+    },
+    "/styles": {
+      "schema": "Style",
+      "description": "Collection of available styles"
+    },
+    "/categories": {
+      "schema": "Category",
+      "description": "Defect categories master data"
+    }
+  }
+}
