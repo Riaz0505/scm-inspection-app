@@ -259,7 +259,7 @@ export default function App() {
     setScannedBundleData(data);
     
     if (!searchCode) {
-      toast.error('Scan successful but no Style Number detected');
+      toast.error('Scan successful but no data detected');
       return;
     }
 
@@ -305,7 +305,8 @@ export default function App() {
       scannedBarcode.preventDefault();
     }
     
-    const codeToSearch = typeof scannedBarcode === 'string' ? scannedBarcode : barcode;
+    const rawCode = typeof scannedBarcode === 'string' ? scannedBarcode : barcode;
+    const codeToSearch = rawCode.trim();
     if (!codeToSearch) return;
 
     setLoading(true);
@@ -339,39 +340,44 @@ export default function App() {
           return;
         }
       } catch (apiErr) {
-        console.warn("Local API style fetch failed, falling back to demo mode:", apiErr);
+        console.warn("Local API style fetch failed", apiErr);
       }
 
-      // 3. Fallback to Demo Layouts
-      let dummyStyle: Style;
-      if (codeToSearch.toUpperCase().includes('SHORTS')) {
-        dummyStyle = {
-          id: 'dummy-shorts',
-          barcode: codeToSearch,
-          name: 'Cargo Shorts Layout (Demo)',
-          type: 'shorts',
-          layoutImage: 'https://placehold.co/600x600/ffffff/1e293b?text=Shorts+Dynamic+Layout',
-          customPoints: [
-            { id: 'W', label: 'WAISTBAND', x: 50, y: 15 },
-            { id: 'L', label: 'LEFT LEG', x: 30, y: 70 },
-            { id: 'R', label: 'RIGHT LEG', x: 70, y: 70 },
-            { id: 'P', label: 'POCKET AREA', x: 25, y: 40 }
-          ]
-        };
-      } else {
-        dummyStyle = {
-          id: 'dummy-' + codeToSearch,
-          barcode: codeToSearch,
-          name: 'Classic White T-Shirt (Demo)',
-          type: 'tshirt'
-        };
-      }
+      // 3. Style not found - ask to find or create
+      toast.error(`Style "${codeToSearch}" not found in database.`);
       
-      setBarcode(codeToSearch);
-      setCurrentStyle(dummyStyle);
-      setWorkflowStep('marking');
-      setIsScannerOpen(false);
-      toast.info(codeToSearch.toUpperCase().includes('SHORTS') ? 'Dynamic Layout Loaded' : 'Demo Style Loaded');
+      // Optional: Ask user if they want to load a demo or check Admin
+      if (confirm(`Style "${codeToSearch}" not found. Would you like to load a demo version?`)) {
+        let dummyStyle: Style;
+        if (codeToSearch.toUpperCase().includes('SHORTS')) {
+          dummyStyle = {
+            id: 'dummy-shorts',
+            barcode: codeToSearch,
+            name: 'Cargo Shorts Layout (Demo)',
+            type: 'shorts',
+            layoutImage: 'https://placehold.co/600x600/ffffff/1e293b?text=Shorts+Dynamic+Layout',
+            customPoints: [
+              { id: 'W', label: 'WAISTBAND', x: 50, y: 15 },
+              { id: 'L', label: 'LEFT LEG', x: 30, y: 70 },
+              { id: 'R', label: 'RIGHT LEG', x: 70, y: 70 },
+              { id: 'P', label: 'POCKET AREA', x: 25, y: 40 }
+            ]
+          };
+        } else {
+          dummyStyle = {
+            id: 'dummy-' + codeToSearch,
+            barcode: codeToSearch,
+            name: 'Classic White T-Shirt (Demo)',
+            type: 'tshirt'
+          };
+        }
+        
+        setBarcode(codeToSearch);
+        setCurrentStyle(dummyStyle);
+        setWorkflowStep('marking');
+        setIsScannerOpen(false);
+        toast.info('Demo Style Loaded');
+      }
     } catch (error) {
       console.error('Scan Error:', error);
       toast.error('Failed to resolve style');

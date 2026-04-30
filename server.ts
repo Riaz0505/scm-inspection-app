@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-// ✅ 2. CORS Middleware added (app.use(express.json()) க்கு கீழே)
+// CORS Middleware
 app.use(express.json());
 app.use(cors({
   origin: "*",
@@ -24,22 +24,16 @@ app.use(cors({
   credentials: true
 }));
 
-app.get("/", (req, res) => {
-  res.send("Backend working ✅");
-});
-
-app.get("/api", (req, res) => {
-  res.json({ message: "API working ✅" });
-});
-
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Set up storage for uploaded files
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+console.log(`📁 Uploads directory: ${uploadsDir}`);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -124,7 +118,7 @@ const CategorySchema = new mongoose.Schema({
 const CategoryModel = mongoose.model("Category", CategorySchema);
 
 // Fallback Data Helpers
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = path.join(process.cwd(), "data");
 const STYLES_FILE = path.join(DATA_DIR, "styles.json");
 const DEFECTS_FILE = path.join(DATA_DIR, "defects.json");
 const CATEGORIES_FILE = path.join(DATA_DIR, "categories.json");
@@ -208,16 +202,33 @@ const DEFAULT_CATEGORIES = [
   }
 ];
 
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-if (!fs.existsSync(STYLES_FILE) || fs.readFileSync(STYLES_FILE, "utf-8") === "[]") {
-  fs.writeFileSync(STYLES_FILE, JSON.stringify([
-    { id: "style-1", barcode: "123456", name: "Classic White T-Shirt", type: "tshirt" }
-  ]));
+const readJsonFile = (filePath: string, defaultData: any) => {
+  try {
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2));
+      return defaultData;
+    }
+    const content = fs.readFileSync(filePath, "utf-8").trim();
+    if (!content) {
+      fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2));
+      return defaultData;
+    }
+    return JSON.parse(content);
+  } catch (error) {
+    console.error(`Error reading ${filePath}:`, error);
+    return defaultData;
+  }
+};
+
+if (!fs.existsSync(DATA_DIR)) {
+  console.log(`📁 Creating data directory: ${DATA_DIR}`);
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
-if (!fs.existsSync(DEFECTS_FILE)) fs.writeFileSync(DEFECTS_FILE, JSON.stringify([]));
-if (!fs.existsSync(CATEGORIES_FILE) || fs.readFileSync(CATEGORIES_FILE, "utf-8") === "[]") {
-  fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(DEFAULT_CATEGORIES));
-}
+
+// Ensure files exist with valid JSON
+readJsonFile(STYLES_FILE, [{ id: "style-1", barcode: "123456", name: "Classic White T-Shirt", type: "tshirt" }]);
+readJsonFile(DEFECTS_FILE, []);
+readJsonFile(CATEGORIES_FILE, DEFAULT_CATEGORIES);
 
 // API Routes
 app.post("/api/admin/seed", async (req, res) => {
@@ -345,19 +356,34 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/uploads", express.static(uploadsDir));
+console.log(`🚀 Serving static files from: ${uploadsDir} at /uploads`);
+
+// Add a test route to check if uploads directory is accessible
+app.get("/api/debug-uploads", (req, res) => {
+  try {
+    const files = fs.readdirSync(uploadsDir);
+    res.json({ 
+      exists: fs.existsSync(uploadsDir), 
+      path: uploadsDir, 
+      files: files,
+      cwd: process.cwd() 
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, path: uploadsDir });
+  }
+});
 
 app.get("/api/categories", async (req, res) => {
   try {
     let categories = [];
-    if (MONGODB_URI) {
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
       categories = await CategoryModel.find();
     } else {
-      if (fs.existsSync(CATEGORIES_FILE)) {
-        categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE, "utf-8"));
-      }
+      categories = readJsonFile(CATEGORIES_FILE, DEFAULT_CATEGORIES);
     }
+    
     if (categories.length === 0 && DEFAULT_CATEGORIES.length > 0) {
-      if (MONGODB_URI) {
+      if (MONGODB_URI && mongoose.connection.readyState === 1) {
         await CategoryModel.insertMany(DEFAULT_CATEGORIES);
         categories = await CategoryModel.find();
       } else {
@@ -367,6 +393,7 @@ app.get("/api/categories", async (req, res) => {
     }
     res.json(categories);
   } catch (error) {
+    console.error("Fetch Categories Error:", error);
     res.status(500).json({ message: "Failed to fetch categories" });
   }
 });
@@ -415,56 +442,73 @@ app.put("/api/categories/:id", async (req, res) => {
 app.get("/api/styles", async (req, res) => {
   const barcode = req.query.barcode as string;
   try {
-    if (MONGODB_URI) {
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
       const query = barcode ? { barcode } : {};
       const styles = await StyleModel.find(query);
       return res.json(styles);
     } else {
-      const styles = JSON.parse(fs.readFileSync(STYLES_FILE, "utf-8"));
+      const styles = readJsonFile(STYLES_FILE, []);
       if (barcode) {
-        const style = styles.find((s: any) => s.barcode === barcode);
+        const cleanBarcode = barcode.trim().toLowerCase();
+        const style = styles.find((s: any) => 
+          s.barcode && s.barcode.toString().trim().toLowerCase() === cleanBarcode
+        );
         return res.json(style ? [style] : []);
       }
       res.json(styles);
     }
   } catch (error) {
+    console.error("Fetch Styles Error:", error);
     res.status(500).json({ message: "Failed to fetch styles" });
   }
 });
 
 app.post("/api/styles", async (req, res) => {
   try {
-    if (MONGODB_URI) {
-      const { barcode } = req.body;
+    const styleData = { ...req.body };
+    if (styleData.barcode) {
+      styleData.barcode = styleData.barcode.toString().trim();
+    }
+
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+      const { barcode } = styleData;
       const existing = await StyleModel.findOne({ barcode });
       if (existing) {
-        Object.assign(existing, req.body);
+        Object.assign(existing, styleData);
         await existing.save();
         return res.json(existing);
       }
-      const newStyle = new StyleModel(req.body);
+      const newStyle = new StyleModel(styleData);
       await newStyle.save();
       res.status(201).json(newStyle);
     } else {
-      const styles = JSON.parse(fs.readFileSync(STYLES_FILE, "utf-8"));
-      const index = styles.findIndex((s: any) => s.barcode === req.body.barcode);
+      const styles = readJsonFile(STYLES_FILE, []);
+      const index = styles.findIndex((s: any) => 
+        s.barcode && s.barcode.toString().trim().toLowerCase() === styleData.barcode.toLowerCase()
+      );
       if (index !== -1) {
-        styles[index] = { ...styles[index], ...req.body };
+        styles[index] = { ...styles[index], ...styleData };
       } else {
-        styles.push({ id: Date.now().toString(), ...req.body });
+        styles.push({ id: Date.now().toString(), ...styleData });
       }
       fs.writeFileSync(STYLES_FILE, JSON.stringify(styles, null, 2));
-      res.json(req.body);
+      res.json(styleData);
     }
   } catch (error) {
+    console.error("Save Style Error:", error);
     res.status(500).json({ message: "Failed to save style" });
   }
 });
 
 app.post("/api/upload", upload.single("image"), (req: any, res: any) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-  const imageUrl = `/uploads/${req.file.filename}`;
-  res.json({ imageUrl });
+  
+  const filename = req.file.filename;
+  // Use relative path for internal consistency
+  const imageUrl = `/uploads/${filename}`;
+  
+  console.log(`✅ File uploaded: ${filename} -> ${imageUrl}`);
+  res.json({ imageUrl, fullUrl: imageUrl });
 });
 
 app.get("/api/defects", async (req, res) => {
@@ -555,17 +599,30 @@ app.post("/api/login", (req, res) => {
 if (MONGODB_URI) {
   mongoose.connect(MONGODB_URI)
     .then(async () => {
-      console.log("Connected to MongoDB");
+      console.log("🟢 Connected to MongoDB Successfully");
     })
-    .catch(err => console.error("MongoDB connection error:", err));
+    .catch(err => {
+      console.error("🔴 MongoDB connection error:", err.message);
+      console.log("⚠️ Falling back to local JSON data in /data directory");
+    });
+} else {
+  console.log("ℹ️ No MONGODB_URI found. Using local JSON data in /data directory");
 }
 
 async function startServer() {
   const distPath = path.join(process.cwd(), 'dist');
-  const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(distPath);
+  // Only serve production build if NODE_ENV is production AND dist exists.
+  // Otherwise, use Vite middleware for live development.
+  const isProduction = process.env.NODE_ENV === "production" && fs.existsSync(distPath);
+
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 Mode: ${isProduction ? 'Production (Static)' : 'Development (Vite Middleware)'}`);
 
   if (!isProduction) {
-    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+    const vite = await createViteServer({ 
+      server: { middlewareMode: true }, 
+      appType: "spa" 
+    });
     app.use(vite.middlewares);
   } else {
     app.use(express.static(distPath));

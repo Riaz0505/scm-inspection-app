@@ -15,10 +15,15 @@ const getBaseUrl = () => {
     const isCapacitor = !!(window as any).Capacitor;
 
     // 3. If in browser and NOT localhost, use the current origin
-    if (!isLocalhost && !isCapacitor) return origin;
+    if (typeof window !== 'undefined' && !isLocalhost && !isCapacitor) {
+      return window.location.origin;
+    }
 
     // 4. Default Fallback for APK/Capacitor/Other
     // THIS URL MUST BE THE PUBLIC SHARED URL
+    // IF we are in a browser on any origin, use that origin instead of falling back
+    if (typeof window !== 'undefined') return window.location.origin;
+
     return 'https://scm-inspection-app.onrender.com';
   }
 
@@ -26,15 +31,38 @@ const getBaseUrl = () => {
 };
 
 export const getApiUrl = (path: string): string => {
-  const baseUrl = getBaseUrl();
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  if (!path) return '';
   
+  let cleanPath = path;
+
+  // Fix legacy hardcoded localhost URLs that might be stored in the database
+  if (cleanPath.startsWith('http://localhost:5173') || cleanPath.startsWith('http://localhost:3000')) {
+    const url = new URL(cleanPath);
+    cleanPath = url.pathname;
+  }
+
+  // If it's already an absolute URL (including data URIs) and not a localhost one we just fixed
+  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://') || cleanPath.startsWith('data:')) {
+    return cleanPath;
+  }
+
+  // Ensure path starts with /
+  const absolutePath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  
+  // If we're in the browser, always use relative paths
+  if (typeof window !== 'undefined') {
+    return absolutePath;
+  }
+
+  // Server-side context (if any)
+  const baseUrl = getBaseUrl();
   if (baseUrl) {
     const divider = baseUrl.endsWith('/') ? '' : '/';
-    return `${baseUrl}${divider}${cleanPath}`;
+    const relativePath = absolutePath.startsWith('/') ? absolutePath.substring(1) : absolutePath;
+    return `${baseUrl}${divider}${relativePath}`;
   }
   
-  return `/${cleanPath}`;
+  return absolutePath;
 };
 
 export const fetchApi = async (path: string, options?: RequestInit) => {
