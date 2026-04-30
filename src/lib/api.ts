@@ -14,7 +14,7 @@ const getBaseUrl = () => {
 
     // 2. If we're in a browser/webapp, use current origin
     // This handles both the preview URL and any custom domain
-    if (origin.startsWith('http')) {
+    if (origin.startsWith('http') && !isLocalhost) {
       return origin;
     }
 
@@ -45,12 +45,6 @@ export const getApiUrl = (path: string): string => {
   // Ensure path starts with /
   const absolutePath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
   
-  // ALWAYS return relative path in browser to let browser handle the origin
-  // This is the most robust way for proxying and multi-environment support
-  if (typeof window !== 'undefined') {
-    return absolutePath;
-  }
-
   // Server-side context fallback
   const baseUrl = getBaseUrl();
   if (baseUrl) {
@@ -66,8 +60,27 @@ export const fetchApi = async (path: string, options?: RequestInit) => {
   const url = getApiUrl(path);
   console.log(`[API] Fetching: ${url}`);
   
+  const fetchOptions: RequestInit = { ...options };
+  const headers = new Headers(fetchOptions.headers || {});
+
+  // Automatically stringify JSON body and set Content-Type header if missing
+  if (
+    fetchOptions.body && 
+    typeof fetchOptions.body === 'object' && 
+    !(fetchOptions.body instanceof FormData)
+  ) {
+    fetchOptions.body = JSON.stringify(fetchOptions.body);
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+  } else if (typeof fetchOptions.body === 'string' && (fetchOptions.body.trim().startsWith('{') || fetchOptions.body.trim().startsWith('[')) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  fetchOptions.headers = headers;
+
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(url, fetchOptions);
     
     if (!response.ok) {
       // Try to get error text

@@ -28,9 +28,14 @@ export const LandingScanner: React.FC<LandingScannerProps> = ({ onScanResult, is
   const nativeListenerRef = useRef<any>(null);
 
   const handleData = (decodedText: string) => {
+    if (!decodedText) return;
+    const cleanText = decodedText.trim();
+    console.log(`[LandingScanner] Scanned: "${cleanText}"`);
+    
     try {
-      if (decodedText.trim().startsWith('{')) {
-        const data = JSON.parse(decodedText);
+      // 1. Handle JSON data
+      if (cleanText.startsWith('{')) {
+        const data = JSON.parse(cleanText);
         const styleNo = data.styleNo || data['Style No'] || data.style_no || data.StyleNo;
         const bundleNo = data.bundleNo || data['Bundle No'] || data.bundle_no || data.BundleNo;
         const qty = data.qty || data.Qty || data.quantity || data.Quantity;
@@ -41,10 +46,35 @@ export const LandingScanner: React.FC<LandingScannerProps> = ({ onScanResult, is
         }
       }
 
-      const parts = decodedText.split(/[,|;\n]/);
-      let bundleNo = '', qty = '', styleNo = '';
+      // 2. Handle URL data (extract last part or query param)
+      if (cleanText.startsWith('http')) {
+        try {
+          const url = new URL(cleanText);
+          const pathParts = url.pathname.split('/').filter(Boolean);
+          const idFromQuery = url.searchParams.get('id') || url.searchParams.get('barcode');
+          const idFromPath = pathParts[pathParts.length - 1];
+          
+          if (idFromQuery || idFromPath) {
+            onScanResult({ bundleNo: '', qty: '', styleNo: idFromQuery || idFromPath });
+            return;
+          }
+        } catch (e) {
+          // Fall through
+        }
+      }
+
+      // 3. Handle Key:Value pairs or comma separated data
+      const parts = cleanText.split(/[,|;\n]/).filter(p => p.trim());
       
+      if (parts.length === 1) {
+        // Plain text - treat as styleNo/barcode
+        onScanResult({ bundleNo: '', qty: '', styleNo: parts[0].trim() });
+        return;
+      }
+
+      let bundleNo = '', qty = '', styleNo = '';
       let identifiedFields = 0;
+      
       parts.forEach(p => {
         const pLower = p.toLowerCase();
         if (pLower.includes('style')) {
@@ -61,17 +91,15 @@ export const LandingScanner: React.FC<LandingScannerProps> = ({ onScanResult, is
         }
       });
 
-      if (!styleNo && identifiedFields === 0) {
-        styleNo = decodedText.trim();
-      }
-
       if (styleNo) {
         onScanResult({ bundleNo, qty, styleNo });
+      } else if (identifiedFields === 0) {
+        onScanResult({ bundleNo: '', qty: '', styleNo: cleanText });
       } else {
         toast.error('No Style Number detected.');
       }
     } catch (e) {
-      onScanResult({ bundleNo: '', qty: '', styleNo: decodedText.trim() });
+      onScanResult({ bundleNo: '', qty: '', styleNo: cleanText });
     }
   };
 

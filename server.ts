@@ -6,7 +6,7 @@ import multer from "multer";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import cors from "cors"; // ✅ 1. CORS Import added
+import cors from "cors"; 
 
 dotenv.config();
 
@@ -26,6 +26,15 @@ app.use(cors({
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;
+
+if (MONGODB_URI) {
+  const masked = MONGODB_URI.includes('@') 
+    ? MONGODB_URI.split('@')[1].split('/')[0] // Show cluster host only for privacy
+    : "Masked URL";
+  console.log(`📡 MONGODB_URI check... Host: ${masked}`);
+} else {
+  console.error('🔴 CRITICAL: MONGODB_URI is missing. Check your .env file or Settings.');
+}
 
 // Set up storage for uploaded files
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -63,7 +72,7 @@ const StyleSchema = new mongoose.Schema({
     y: Number
   }]
 });
-const StyleModel = mongoose.model("Style", StyleSchema);
+const StyleModel = mongoose.model("Style", StyleSchema, "styles");
 
 const DefectSchema = new mongoose.Schema({
   reportId: String,
@@ -102,7 +111,7 @@ const DefectSchema = new mongoose.Schema({
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
-const DefectModel = mongoose.model("Defect", DefectSchema);
+const DefectModel = mongoose.model("Defect", DefectSchema, "defects");
 
 const CategorySchema = new mongoose.Schema({
   id: String,
@@ -115,7 +124,7 @@ const CategorySchema = new mongoose.Schema({
     imageUrl: String
   }]
 });
-const CategoryModel = mongoose.model("Category", CategorySchema);
+const CategoryModel = mongoose.model("Category", CategorySchema, "categories");
 
 // Fallback Data Helpers
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -405,43 +414,60 @@ app.get("/api/categories", async (req, res) => {
 });
 
 app.post("/api/categories", async (req, res) => {
-  if (MONGODB_URI) {
-    const category = new CategoryModel(req.body);
-    await category.save();
-    res.status(201).json(category);
-  } else {
-    const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE, "utf-8"));
-    const newCategory = { id: Date.now().toString(), ...req.body };
-    categories.push(newCategory);
-    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories, null, 2));
-    res.status(201).json(newCategory);
+  try {
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+      const data = req.body;
+      const updated = await CategoryModel.findOneAndUpdate(
+        { id: data.id },
+        { $set: data },
+        { upsert: true, new: true }
+      );
+      console.log(`✅ Category updated in MongoDB: ${data.name}`);
+      res.json(updated);
+    } else {
+      const categories = readJsonFile(CATEGORIES_FILE, DEFAULT_CATEGORIES);
+      const index = categories.findIndex((c: any) => c.id === req.body.id);
+      if (index !== -1) {
+        categories[index] = req.body;
+      } else {
+        categories.push(req.body);
+      }
+      fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories, null, 2));
+      res.json(req.body);
+    }
+  } catch (error: any) {
+    console.error("❌ Save Category Error:", error.message);
+    res.status(500).json({ message: "Failed to save category" });
   }
 });
 
 app.put("/api/categories/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    if (MONGODB_URI) {
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
       const updated = await CategoryModel.findOneAndUpdate(
         { $or: [{ _id: id }, { id: id }, { name: id }] }, 
         { $set: req.body }, 
         { new: true }
       );
-      if (!updated) return res.status(404).json({ message: "Category not found" });
+      if (!updated) return res.status(404).json({ message: "Category not found in MongoDB" });
+      console.log(`✅ Category ${id} updated in MongoDB`);
       res.json(updated);
     } else {
-      const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE, "utf-8"));
+      const categories = readJsonFile(CATEGORIES_FILE, DEFAULT_CATEGORIES);
       const index = categories.findIndex((c: any) => c.id === id || c._id === id || c.name === id);
       if (index !== -1) {
         categories[index] = { ...categories[index], ...req.body };
         fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories, null, 2));
+        console.log(`📂 Category ${id} updated in Local JSON`);
         res.json(categories[index]);
       } else {
-        res.status(404).json({ message: "Category not found" });
+        res.status(404).json({ message: "Category not found locally" });
       }
     }
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error: any) {
+    console.error("❌ PUT Category Error:", error.message);
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
 
@@ -449,8 +475,22 @@ app.get("/api/styles", async (req, res) => {
   const barcode = req.query.barcode as string;
   try {
     if (MONGODB_URI && mongoose.connection.readyState === 1) {
-      const query = barcode ? { barcode } : {};
-      const styles = await StyleModel.find(query);
+      const cleanBarcode = (barcode || "").toString().trim();
+      
+      let query = {};
+      if (cleanBarcode) {
+        // Try exact match and regex match for maximum compatibility
+        query = {
+          $or: [
+            { barcode: cleanBarcode },
+            { barcode: { $regex: new RegExp(`^${cleanBarcode}$`, "i") } }
+          ]
+        };
+      }
+      
+      console.log(`🔍 MongoDB Styles Fetch: Searching for "${cleanBarcode}"`);
+      const styles = await StyleModel.find(query).lean();
+      console.log(`✅ Found ${styles.length} styles`);
       return res.json(styles);
     } else {
       const styles = readJsonFile(STYLES_FILE, []);
@@ -461,11 +501,11 @@ app.get("/api/styles", async (req, res) => {
         );
         return res.json(style ? [style] : []);
       }
-      res.json(styles);
+      return res.json(styles);
     }
-  } catch (error) {
-    console.error("Fetch Styles Error:", error);
-    res.status(500).json({ message: "Failed to fetch styles" });
+  } catch (error: any) {
+    console.error("❌ Fetch Styles Error:", error.message);
+    res.status(500).json({ message: "Failed to fetch styles", error: error.message });
   }
 });
 
@@ -480,7 +520,11 @@ app.post("/api/styles", async (req, res) => {
       const { barcode } = styleData;
       if (!barcode) return res.status(400).json({ message: "Barcode is required" });
       
-      const existing = await StyleModel.findOne({ barcode });
+      const cleanBarcode = barcode.toString().trim();
+      // Case-insensitive search for existing style
+      const existing = await StyleModel.findOne({ 
+        barcode: { $regex: new RegExp(`^${cleanBarcode}$`, "i") } 
+      });
       if (existing) {
         Object.assign(existing, styleData);
         await existing.save();
@@ -611,16 +655,36 @@ app.post("/api/login", (req, res) => {
 });
 
 if (MONGODB_URI) {
-  mongoose.connect(MONGODB_URI)
-    .then(async () => {
-      console.log("🟢 Connected to MongoDB Successfully");
-    })
-    .catch(err => {
-      console.error("🔴 MongoDB connection error:", err.message);
-      console.log("⚠️ Falling back to local JSON data in /data directory");
-    });
+  console.log("⏳ Attempting to connect to MongoDB...");
+  
+  const connectDB = () => {
+    mongoose.connect(MONGODB_URI)
+      .then(async () => {
+        const dbName = mongoose.connection.db?.databaseName;
+        const host = mongoose.connection.host;
+        console.log(`🟢 Connected to MongoDB Successfully!`);
+        console.log(`📡 Database: ${dbName}`);
+        console.log(`🏠 Host: ${host}`);
+      })
+      .catch(err => {
+        console.error("🔴 MongoDB connection error:", err.message);
+        console.log("⚠️ Falling back to local JSON data in /data directory");
+      });
+  };
+
+  connectDB();
+
+  mongoose.connection.on('error', (err) => {
+    console.error(`🔴 MongoDB Runtime Error: ${err.message}`);
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.warn('🟡 MongoDB Disconnected! Attempting to reconnect in 5s...');
+    setTimeout(connectDB, 5000);
+  });
 } else {
-  console.log("ℹ️ No MONGODB_URI found. Using local JSON data in /data directory");
+  console.log("ℹ️ No MONGODB_URI found in environment variables.");
+  console.log("⚠️ Using local JSON data in /data directory. If you want to use MongoDB, please set MONGODB_URI in Settings -> Secrets.");
 }
 
 async function startServer() {

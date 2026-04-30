@@ -306,32 +306,31 @@ export default function App() {
     }
     
     const rawCode = typeof scannedBarcode === 'string' ? scannedBarcode : barcode;
-    const codeToSearch = rawCode.trim();
+    let codeToSearch = rawCode.trim();
+    
+    // Help users who might scan URLs by mistake
+    if (codeToSearch.startsWith('http')) {
+      try {
+        const url = new URL(codeToSearch);
+        const pathParts = url.pathname.split('/').filter(Boolean);
+        const idFromQuery = url.searchParams.get('id') || url.searchParams.get('barcode');
+        const idFromPath = pathParts[pathParts.length - 1];
+        codeToSearch = idFromQuery || idFromPath || codeToSearch;
+      } catch (e) {}
+    }
+
     if (!codeToSearch) return;
 
     setLoading(true);
     try {
-      // 1. Try Firebase first
-      let fbStyle = null;
+      // 1. Try Local API first (standard path)
       try {
-        fbStyle = await firebaseService.getStyleByBarcode(codeToSearch);
-      } catch (fbErr) {
-        console.warn("Firebase style fetch failed, falling back to local API:", fbErr);
-      }
+        // We use query parameter to find exact style
+        const styles = await fetchApi(`/api/styles?barcode=${encodeURIComponent(codeToSearch)}`);
+        
+        console.log(`[App] Style Search Results for "${codeToSearch}":`, styles);
 
-      if (fbStyle) {
-        setBarcode(codeToSearch);
-        setCurrentStyle(fbStyle);
-        toast.success(`Style Found: ${fbStyle.name}`);
-        setWorkflowStep('marking');
-        setIsScannerOpen(false);
-        return;
-      }
-
-      // 2. Try Local API next
-      try {
-        const styles = await fetchApi(`/api/styles?barcode=${codeToSearch}`);
-        if (styles && styles.length > 0) {
+        if (styles && Array.isArray(styles) && styles.length > 0) {
           setBarcode(codeToSearch);
           setCurrentStyle(styles[0]);
           toast.success(`Style Found: ${styles[0].name}`);
@@ -341,6 +340,23 @@ export default function App() {
         }
       } catch (apiErr) {
         console.warn("Local API style fetch failed", apiErr);
+      }
+
+      // 2. Try Firebase as secondary
+      let fbStyle = null;
+      try {
+        fbStyle = await firebaseService.getStyleByBarcode(codeToSearch);
+      } catch (fbErr) {
+        console.warn("Firebase style fetch failed:", fbErr);
+      }
+
+      if (fbStyle) {
+        setBarcode(codeToSearch);
+        setCurrentStyle(fbStyle);
+        toast.success(`Style Found (Cloud): ${fbStyle.name}`);
+        setWorkflowStep('marking');
+        setIsScannerOpen(false);
+        return;
       }
 
       // 3. Style not found - ask to find or create

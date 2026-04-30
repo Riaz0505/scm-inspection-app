@@ -358,6 +358,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [styles, setStyles] = useState<Style[]>([]);
   const [newStyle, setNewStyle] = useState<Partial<Style>>({ type: 'tshirt' });
   const [uploading, setUploading] = useState(false);
+  const [dbStatus, setDbStatus] = useState<{mongo: string, mode: string} | null>(null);
+
+  const fetchHealth = async () => {
+    try {
+      const data = await fetchApi('/api/health');
+      setDbStatus(data);
+    } catch (e) {
+      console.warn('Health check failed');
+    }
+  };
 
   // Persist viewingReport
   useEffect(() => {
@@ -404,13 +414,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       toast.error('Barcode and Name are required');
       return;
     }
-    // Clean up temporary points if needed
-    const styleData = {
-      ...newStyle,
-      customPoints: newStyle.customPoints?.map(({ id, label, x, y }) => ({ id, label, x, y }))
-    };
     
     try {
+      const styleData = {
+        ...newStyle,
+        barcode: newStyle.barcode.toString().trim(),
+        customPoints: newStyle.customPoints?.map(({ id, label, x, y }) => ({ id, label, x, y }))
+      };
+      
       await fetchApi('/api/styles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -539,6 +550,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     fetchStyles();
     fetchReports();
+    fetchHealth();
     // Also keep Firebase listener for true real-time if available
     const unsubscribe = firebaseService.listenToReports((data) => {
       if (data && data.length >= reports.length) {
@@ -585,11 +597,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
     
     try {
+      console.log(`[Admin] Updating Main Image for Category: ${catId} to ${newUrl}`);
       const updatedCat = await fetchApi(`/api/categories/${catId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: newUrl })
       });
+      console.log('[Admin] Category Update Success:', updatedCat);
 
       // Update local state with server truth to ensure persistence is visible
       setEditingImages(prev => ({
@@ -710,9 +724,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
           <p className="text-xl sm:text-3xl font-black text-slate-900 tracking-tighter">Inspection Logs</p>
-          <p className="text-[9px] font-mono text-slate-400 mt-1 uppercase tracking-widest">
-            Last Sync: {new Date().toLocaleTimeString()}
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">
+              Last Sync: {new Date().toLocaleTimeString()}
+            </p>
+            {dbStatus && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 ml-0 sm:ml-2">
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${dbStatus.mongo === 'connected' ? 'bg-green-500' : 'bg-rose-500'} animate-pulse`} />
+                  <span className={`text-[8px] font-black uppercase ${dbStatus.mongo === 'connected' ? 'text-green-600' : 'text-rose-600'}`}>
+                    DB: {dbStatus.mongo === 'connected' ? 'Atlas Connected' : 'Local Fallback'}
+                  </span>
+                </div>
+                {dbStatus.mongo !== 'connected' && (
+                  <span className="text-[7px] font-bold text-rose-400 uppercase tracking-tighter">
+                    (Warnings: Check MongoDB Secret in Settings)
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="flex flex-col sm:flex-row items-end gap-4 w-full sm:w-auto">
