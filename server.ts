@@ -6,6 +6,7 @@ import multer from "multer";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import cors from "cors"; // ✅ 1. CORS Import added
 
 dotenv.config();
 
@@ -15,7 +16,13 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
+// ✅ 2. CORS Middleware added (app.use(express.json()) க்கு கீழே)
 app.use(express.json());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  credentials: true
+}));
 
 app.get("/", (req, res) => {
   res.send("Backend working ✅");
@@ -65,8 +72,8 @@ const StyleSchema = new mongoose.Schema({
 const StyleModel = mongoose.model("Style", StyleSchema);
 
 const DefectSchema = new mongoose.Schema({
-  reportId: String, // Explicitly named for Firebase IDs
-  id: String, // String compatibility for older records/JSON fallback
+  reportId: String,
+  id: String,
   styleId: String,
   styleName: String,
   layoutImage: String,
@@ -95,7 +102,7 @@ const DefectSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   serverTimestamp: { type: Date, default: Date.now }
 }, { 
-  id: false, // Disable the 'id' virtual to prevent conflict with string 'id' field
+  id: false,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
@@ -210,7 +217,7 @@ if (!fs.existsSync(CATEGORIES_FILE) || fs.readFileSync(CATEGORIES_FILE, "utf-8")
   fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(DEFAULT_CATEGORIES));
 }
 
-// API Routes start here
+// API Routes
 app.post("/api/admin/seed", async (req, res) => {
   try {
     if (MONGODB_URI) {
@@ -230,6 +237,7 @@ app.post("/api/admin/seed", async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to seed data" });
   }
 });
+
 app.get("/api/stats/global", async (req, res) => {
   try {
     let allDefects = [];
@@ -275,7 +283,7 @@ app.get("/api/stats/global", async (req, res) => {
     });
   } catch (error) {
     console.error("Stats Error:", error);
-    res.status(200).json({ styles: [], parts: [], operators: [] }); // Graceful fallback
+    res.status(200).json({ styles: [], parts: [], operators: [] }); 
   }
 });
 
@@ -325,7 +333,6 @@ app.get("/api/stats/style/:barcode", async (req, res) => {
   }
 });
 
-// Health check endpoint
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "ok", 
@@ -335,10 +342,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Serve static files from the 'uploads' directory
 app.use("/uploads", express.static(uploadsDir));
 
-// API Routes
 app.get("/api/categories", async (req, res) => {
   try {
     let categories = [];
@@ -349,10 +354,7 @@ app.get("/api/categories", async (req, res) => {
         categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE, "utf-8"));
       }
     }
-
-    // Auto-seed if empty and we have defaults
     if (categories.length === 0 && DEFAULT_CATEGORIES.length > 0) {
-      console.log("Auto-seeding empty categories database...");
       if (MONGODB_URI) {
         await CategoryModel.insertMany(DEFAULT_CATEGORIES);
         categories = await CategoryModel.find();
@@ -361,10 +363,8 @@ app.get("/api/categories", async (req, res) => {
         categories = DEFAULT_CATEGORIES;
       }
     }
-
     res.json(categories);
   } catch (error) {
-    console.error("Error fetching categories:", error);
     res.status(500).json({ message: "Failed to fetch categories" });
   }
 });
@@ -385,8 +385,6 @@ app.post("/api/categories", async (req, res) => {
 
 app.put("/api/categories/:id", async (req, res) => {
   const { id } = req.params;
-  console.log(`[API] Updating category: ${id}`, req.body);
-  
   try {
     if (MONGODB_URI) {
       const updated = await CategoryModel.findOneAndUpdate(
@@ -394,7 +392,7 @@ app.put("/api/categories/:id", async (req, res) => {
         { $set: req.body }, 
         { new: true }
       );
-      if (!updated) return res.status(404).json({ message: "Category not found in DB" });
+      if (!updated) return res.status(404).json({ message: "Category not found" });
       res.json(updated);
     } else {
       const categories = JSON.parse(fs.readFileSync(CATEGORIES_FILE, "utf-8"));
@@ -402,19 +400,16 @@ app.put("/api/categories/:id", async (req, res) => {
       if (index !== -1) {
         categories[index] = { ...categories[index], ...req.body };
         fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories, null, 2));
-        console.log(`[API] Saved to file: ${CATEGORIES_FILE}`);
         res.json(categories[index]);
       } else {
-        res.status(404).json({ message: "Category not found in JSON" });
+        res.status(404).json({ message: "Category not found" });
       }
     }
   } catch (error) {
-    console.error(`[API] Update error:`, error);
-    res.status(500).json({ message: "Internal server error during update" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-// API Routes
 app.get("/api/styles", async (req, res) => {
   const barcode = req.query.barcode as string;
   try {
@@ -465,10 +460,7 @@ app.post("/api/styles", async (req, res) => {
 });
 
 app.post("/api/upload", upload.single("image"), (req: any, res: any) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "No file uploaded" });
-  }
-  // Use relative path to ensure it works regardless of proxy/protocol/host
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
   const imageUrl = `/uploads/${req.file.filename}`;
   res.json({ imageUrl });
 });
@@ -483,79 +475,55 @@ app.get("/api/defects", async (req, res) => {
   }
 });
 
+// ✅ 3. FIXED DEFECT API (CRITICAL FIX FOR FIRESTORE ERRORS)
 app.post("/api/defects", async (req, res) => {
   const inspector = req.body.inspectorName || 'Unknown';
-  console.log(`📥 Incoming Report from: ${inspector} (${req.body.reporterEmail})`);
+  console.log(`📥 Incoming Report from: ${inspector}`);
   
   try {
-    if (MONGODB_URI) {
-      // Create a copy and clean up forbidden fields that might trigger CastError
-      const payload = { ...req.body };
-      
-      // Ensure we have a string reportId for lookups
-      if (!payload.reportId && payload.id) {
-        payload.reportId = payload.id;
-      }
+    // Payload cleaning
+    const payload = { ...req.body };
 
-      // VITAL: Strip _id and id from payload before saving to MongoDB
-      // so Mongoose doesn't try to use a string ID as an ObjectId
-      delete payload._id;
-      // We keep payload.id as it's defined as a String in our schema, 
-      // but if it's causing issues we can strip it too.
-      
+    // 🔥 VITAL FIX: Ensure empty arrays instead of undefined
+    payload.customPoints = payload.customPoints || [];
+    payload.defects = payload.defects || [];
+
+    // Sync IDs
+    if (!payload.reportId && payload.id) {
+      payload.reportId = payload.id;
+    }
+
+    if (MONGODB_URI) {
+      delete payload._id; // Prevent ObjectId casting issues
       const newDefect = new DefectModel(payload);
       await newDefect.save();
-      console.log(`✅ Report saved to MongoDB: ${newDefect._id}`);
       res.status(201).json(newDefect);
     } else {
       const defects = JSON.parse(fs.readFileSync(DEFECTS_FILE, "utf-8"));
-      const newDefect = { id: Date.now().toString(), ...req.body, createdAt: new Date().toISOString() };
+      const newDefect = { id: Date.now().toString(), ...payload, createdAt: new Date().toISOString() };
       defects.push(newDefect);
       fs.writeFileSync(DEFECTS_FILE, JSON.stringify(defects, null, 2));
       res.status(201).json(newDefect);
     }
   } catch (error: any) {
-    console.error("â Œ Error saving defect:", error.message);
-    res.status(500).json({ message: "Failed to save defect report", error: error.message });
+    console.error("❌ Error saving defect:", error.message);
+    res.status(500).json({ message: "Failed to save defect", error: error.message });
   }
 });
 
 app.patch("/api/defects/:id", async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  
-  console.log(`🔄 Attempting to resolve defect: ${id} to status: ${status}`);
-  
   try {
     if (MONGODB_URI) {
-      let updated = null;
+      let updated = await DefectModel.findOneAndUpdate({ reportId: id }, { status }, { new: true });
+      if (!updated) updated = await DefectModel.findOneAndUpdate({ id: id }, { status }, { new: true });
       
-      // 1. Try finding by custom reportId (String search - SAFE)
-      // Uses the string field reportId. 
-      updated = await DefectModel.findOneAndUpdate({ reportId: id }, { status }, { new: true });
-      
-      // 2. Try by custom 'id' field (String search - SAFE)
-      if (!updated) {
-        updated = await DefectModel.findOneAndUpdate({ id: id }, { status }, { new: true });
-      }
-
-      // 3. Last fallback: ONLY if it's a valid 24-character hex ObjectId
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
       if (!updated && isObjectId) {
-        try {
-          // Use findById only if it looks like an ObjectId to prevent CastError crashes
-          updated = await DefectModel.findByIdAndUpdate(id, { status }, { new: true });
-        } catch (innerErr) {
-          console.warn("Skipping ObjectId update due to casting issue:", id);
-        }
+        updated = await DefectModel.findByIdAndUpdate(id, { status }, { new: true });
       }
-      
-      if (!updated) {
-        console.warn(`⚠️ Defect not found in DB with ID: ${id}`);
-        return res.status(404).json({ message: "Defect not found in DB" });
-      }
-      
-      console.log(`✅ Defect ${id} resolved successfully`);
+      if (!updated) return res.status(404).json({ message: "Defect not found" });
       res.json(updated);
     } else {
       const defects = JSON.parse(fs.readFileSync(DEFECTS_FILE, "utf-8"));
@@ -565,11 +533,10 @@ app.patch("/api/defects/:id", async (req, res) => {
         fs.writeFileSync(DEFECTS_FILE, JSON.stringify(defects, null, 2));
         res.json(defects[index]);
       } else {
-        res.status(404).json({ message: "Defect not found in JSON" });
+        res.status(404).json({ message: "Defect not found" });
       }
     }
   } catch (err) {
-    console.error("Update defect error:", err);
     res.status(500).json({ message: "Server error during update" });
   }
 });
@@ -587,27 +554,8 @@ if (MONGODB_URI) {
   mongoose.connect(MONGODB_URI)
     .then(async () => {
       console.log("Connected to MongoDB");
-      try {
-        // Seed Categories if empty
-        const catCount = await CategoryModel.countDocuments();
-        if (catCount === 0) {
-          console.log("Seeding MongoDB categories...");
-          await CategoryModel.insertMany(DEFAULT_CATEGORIES);
-        }
-        // Seed Styles if empty
-        const styleCount = await StyleModel.countDocuments();
-        if (styleCount === 0) {
-          console.log("Seeding MongoDB styles...");
-          const styleData = fs.existsSync(STYLES_FILE) ? JSON.parse(fs.readFileSync(STYLES_FILE, "utf-8")) : [{ id: "style-1", barcode: "123456", name: "Classic T", type: "tshirt" }];
-          await StyleModel.insertMany(styleData);
-        }
-      } catch (seedErr) {
-        console.error("Error seeding MongoDB:", seedErr);
-      }
     })
     .catch(err => console.error("MongoDB connection error:", err));
-} else {
-  console.warn("MONGODB_URI not found. Running in Mock Mode with JSON files.");
 }
 
 async function startServer() {
@@ -615,27 +563,17 @@ async function startServer() {
   const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(distPath);
 
   if (!isProduction) {
-    console.log("🛠️ Starting in DEVELOPMENT mode");
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
     app.use(vite.middlewares);
   } else {
-    console.log("🚀 Starting in PRODUCTION mode");
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      const indexPath = path.join(distPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(404).send("Build artifacts not found. Please run 'npm run build'.");
-      }
+      res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`✅ SERVER RUNNING: http://localhost:${PORT} [${isProduction ? 'PROD' : 'DEV'}]`);
-    if (!MONGODB_URI) {
-      console.log(`📝 MONGODB_URI not set. Local storage active.`);
-    }
+    console.log(`✅ SERVER RUNNING: http://localhost:${PORT}`);
   });
 }
 
