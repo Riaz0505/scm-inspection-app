@@ -19,7 +19,7 @@ const getBaseUrl = () => {
 
     // 4. Default Fallback for APK/Capacitor/Other
     // THIS URL MUST BE THE PUBLIC SHARED URL
-    return 'https://ais-pre-j66njvycmxrz6roeu55lbn-424616902457.asia-east1.run.app';
+    return 'https://scm-inspection-app.onrender.com';
   }
 
   return '';
