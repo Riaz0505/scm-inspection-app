@@ -137,6 +137,8 @@ const DetailModal = ({
                   <GarmentModel 
                     type={(report.styleName?.toLowerCase().includes('shirt') || report.styleId?.toLowerCase().includes('shirt')) ? 'tshirt' : ((report.styleName?.toLowerCase().includes('short') || report.styleId?.toLowerCase().includes('short')) ? 'shorts' : 'tshirt')} 
                     layoutImage={report.layoutImage}
+                    frontImageUrl={report.frontImageUrl}
+                    backImageUrl={report.backImageUrl}
                     customPoints={report.customPoints}
                     selectedParts={report.part ? report.part.split(',').map(p => p.trim()) : []} 
                     heatMapData={(report.defects || []).reduce((acc, d) => {
@@ -422,8 +424,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const [mapperView, setMapperView] = useState<'front' | 'back'>('front');
+
   const handlePointAdd = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!newStyle.layoutImage) return;
+    const currentImageUrl = mapperView === 'front' ? (newStyle.frontImageUrl || newStyle.layoutImage) : newStyle.backImageUrl;
+    if (!currentImageUrl) return;
+    
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Number(((e.clientX - rect.left) / rect.width * 100).toFixed(2));
     const y = Number(((e.clientY - rect.top) / rect.height * 100).toFixed(2));
@@ -431,11 +437,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     // Generate next alphabet ID
     const pointCount = newStyle.customPoints?.length || 0;
     const id = String.fromCharCode(65 + (pointCount % 26)) + (pointCount >= 26 ? Math.floor(pointCount / 26) : '');
-    const label = `Marker ${id}`;
+    const prefix = mapperView === 'back' ? 'B-' : 'F-';
+    const finalId = prefix + id;
+    const label = `Marker ${finalId}`;
     
     setNewStyle(prev => ({
       ...prev,
-      customPoints: [...(prev.customPoints || []), { id, label, x, y }]
+      customPoints: [...(prev.customPoints || []), { id: finalId, label, x, y }]
     }));
   };
 
@@ -1028,66 +1036,80 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 pt-1">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between gap-2">
                         Front Image
                         <label className="cursor-pointer">
                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'frontImageUrl')} disabled={uploading} />
-                          <span className="text-[8px] font-black text-primary hover:underline">UPLOAD</span>
+                          <span className="text-[8px] font-black text-primary hover:underline flex items-center gap-1">
+                            {uploading ? <Loader2 className="w-2 h-2 animate-spin" /> : <Upload className="w-2 h-2" />}
+                            UPLOAD
+                          </span>
                         </label>
                       </label>
-                      <Input 
-                        placeholder="Front view URL..." 
-                        value={newStyle.frontImageUrl || ''}
-                        onChange={e => setNewStyle(p => ({ ...p, frontImageUrl: e.target.value }))}
-                        className="h-10 border-slate-200 focus:border-primary rounded-xl text-[10px]"
-                      />
+                      <div className="flex gap-2">
+                        {newStyle.frontImageUrl && (
+                          <div className="w-10 h-10 rounded-lg border border-slate-200 overflow-hidden flex-shrink-0 bg-white">
+                            <img src={getApiUrl(newStyle.frontImageUrl)} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                          </div>
+                        )}
+                        <Input 
+                          placeholder="Front view URL..." 
+                          value={newStyle.frontImageUrl || ''}
+                          onChange={e => setNewStyle(p => ({ ...p, frontImageUrl: e.target.value }))}
+                          className="h-10 border-slate-200 focus:border-primary rounded-xl text-[10px] flex-1"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 pt-1">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between gap-2">
                         Back Image
                         <label className="cursor-pointer">
                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'backImageUrl')} disabled={uploading} />
-                          <span className="text-[8px] font-black text-primary hover:underline">UPLOAD</span>
+                          <span className="text-[8px] font-black text-primary hover:underline flex items-center gap-1">
+                            {uploading ? <Loader2 className="w-2 h-2 animate-spin" /> : <Upload className="w-2 h-2" />}
+                            UPLOAD
+                          </span>
                         </label>
                       </label>
-                      <Input 
-                        placeholder="Back view URL..." 
-                        value={newStyle.backImageUrl || ''}
-                        onChange={e => setNewStyle(p => ({ ...p, backImageUrl: e.target.value }))}
-                        className="h-10 border-slate-200 focus:border-primary rounded-xl text-[10px]"
-                      />
+                      <div className="flex gap-2">
+                        {newStyle.backImageUrl && (
+                          <div className="w-10 h-10 rounded-lg border border-slate-200 overflow-hidden flex-shrink-0 bg-white">
+                            <img src={getApiUrl(newStyle.backImageUrl)} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                          </div>
+                        )}
+                        <Input 
+                          placeholder="Back view URL..." 
+                          value={newStyle.backImageUrl || ''}
+                          onChange={e => setNewStyle(p => ({ ...p, backImageUrl: e.target.value }))}
+                          className="h-10 border-slate-200 focus:border-primary rounded-xl text-[10px] flex-1"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        Main Layout Image (Fallback)
-                        <Badge variant="secondary" className="text-[7px] h-3 px-1">PNG/JPG</Badge>
-                      </div>
-                      <label className="cursor-pointer">
-                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'layoutImage')} disabled={uploading} />
-                        <span className="text-[8px] font-black text-primary hover:underline flex items-center gap-1">
-                          {uploading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Upload className="w-2.5 h-2.5" />}
-                          UPLOAD FROM STORAGE
-                        </span>
-                      </label>
-                    </label>
-                    <Input 
-                      placeholder="Paste gallery URL or use upload button..." 
-                      value={newStyle.layoutImage || ''}
-                      onChange={e => setNewStyle(p => ({ ...p, layoutImage: e.target.value }))}
-                      className="h-10 border-slate-200 focus:border-primary rounded-xl text-[10px]"
-                    />
-                  </div>
-
-                  {newStyle.layoutImage && (
+                  {(newStyle.frontImageUrl || newStyle.backImageUrl || newStyle.layoutImage) && (
                     <div className="space-y-3 pt-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                          Visual Mapper (Click to Drop Points)
-                        </label>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                            Visual Mapper
+                          </label>
+                          <div className="flex gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                             <button
+                               onClick={() => setMapperView('front')}
+                               className={`px-3 py-1 text-[8px] font-black rounded-md transition-all ${mapperView === 'front' ? 'bg-white shadow-sm text-primary' : 'text-slate-400'}`}
+                             >
+                               FRONT
+                             </button>
+                             <button
+                               onClick={() => setMapperView('back')}
+                               className={`px-3 py-1 text-[8px] font-black rounded-md transition-all ${mapperView === 'back' ? 'bg-white shadow-sm text-primary' : 'text-slate-400'}`}
+                             >
+                               BACK
+                             </button>
+                          </div>
+                        </div>
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -1103,44 +1125,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         onClick={handlePointAdd}
                       >
                         <img 
-                          key={newStyle.layoutImage}
-                          src={newStyle.layoutImage} 
+                          key={mapperView === 'front' ? (newStyle.frontImageUrl || newStyle.layoutImage) : newStyle.backImageUrl}
+                          src={getApiUrl(mapperView === 'front' ? (newStyle.frontImageUrl || newStyle.layoutImage || '') : (newStyle.backImageUrl || ''))} 
                           alt="Layout mapping" 
                           className="w-full h-full object-contain p-4 pointer-events-none select-none"
                           referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             if (!target.src.includes('broken')) {
-                               toast.error('Image load failed. Link might be restricted.');
+                               // toast.error('Image load failed. Link might be restricted.');
                             }
                           }}
                         />
                         <div className="absolute inset-0 bg-primary/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                          <p className="text-[10px] font-black text-primary bg-white px-3 py-1.5 rounded-full shadow-lg uppercase tracking-widest border border-primary/20">Click anywhere to mark</p>
+                          <p className="text-[10px] font-black text-primary bg-white px-3 py-1.5 rounded-full shadow-lg uppercase tracking-widest border border-primary/20">Click anywhere to mark ({mapperView.toUpperCase()})</p>
                         </div>
                         
-                        {newStyle.customPoints?.map((point) => (
-                          <div
-                            key={point.id}
-                            className="absolute -translate-x-1/2 -translate-y-1/2 group/point"
-                            style={{ left: `${point.x}%`, top: `${point.y}%` }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="w-8 h-8 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-white">
-                              {point.id}
-                            </div>
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-slate-900 text-white text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">
-                              {point.label}
-                            </div>
-                            <button 
-                              onClick={() => removePoint(point.id)}
-                              className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/point:opacity-100 transition-opacity shadow-sm"
+                        {newStyle.customPoints?.map((point) => {
+                          const isBackPoint = point.id.startsWith('B-');
+                          // Only show points matching the current view
+                          if (mapperView === 'front' && isBackPoint) return null;
+                          if (mapperView === 'back' && !isBackPoint) return null;
+
+                          return (
+                            <div
+                              key={point.id}
+                              className="absolute -translate-x-1/2 -translate-y-1/2 group/point"
+                              style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
-                          </div>
-                        ))}
+                              <div className={`w-8 h-8 rounded-full ${isBackPoint ? 'bg-rose-500' : 'bg-primary'} text-white text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-white`}>
+                                {point.id.replace('F-', '').replace('B-', '')}
+                              </div>
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-slate-900 text-white text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">
+                                {point.label}
+                              </div>
+                              <button 
+                                onClick={() => removePoint(point.id)}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/point:opacity-100 transition-opacity shadow-sm"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                       
                       {newStyle.customPoints && newStyle.customPoints.length > 0 && (
@@ -1190,8 +1218,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Card key={style.id} className="border-slate-200 shadow-sm hover:border-primary transition-all group overflow-hidden">
                     <div className="p-4 flex items-center gap-4">
                       <div className="w-16 h-16 rounded-lg bg-slate-50 border border-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
-                        {style.layoutImage ? (
-                          <img src={style.layoutImage} alt={style.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                        {style.frontImageUrl || style.layoutImage ? (
+                          <img src={getApiUrl(style.frontImageUrl || style.layoutImage || '')} alt={style.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                         ) : (
                           <ImageIcon className="w-6 h-6 text-slate-200" />
                         )}

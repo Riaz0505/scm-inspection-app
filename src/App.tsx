@@ -85,6 +85,7 @@ export default function App() {
   const [tempInspectorName, setTempInspectorName] = useState('');
   const [historyReports, setHistoryReports] = useState<DefectReport[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'mine' | 'all'>('mine');
 
   // Handle modal open
   useEffect(() => {
@@ -118,7 +119,7 @@ export default function App() {
     } else {
       localStorage.removeItem('scm_style');
     }
-  }, [user, isAdminLoggedIn, view, currentStyle, selectedParts, isReporting]);
+  }, [user, isAdminLoggedIn, view, currentStyle, selectedParts, isReporting, inspectorName, operation, operatorName, savedInspectors, workflowStep, scannedBundleData]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
@@ -267,18 +268,22 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (workflowStep === 'history' && inspectorName) {
+    if (workflowStep === 'history') {
       setHistoryLoading(true);
       const unsubscribe = firebaseService.listenToReports((allReports) => {
-        const myReports = allReports.filter(r => 
-          r.inspectorName?.toLowerCase() === inspectorName.toLowerCase()
-        );
-        setHistoryReports(myReports);
+        if (historyFilter === 'mine' && inspectorName) {
+          const myReports = allReports.filter(r => 
+            r.inspectorName?.toLowerCase() === inspectorName.toLowerCase()
+          );
+          setHistoryReports(myReports);
+        } else {
+          setHistoryReports(allReports);
+        }
         setHistoryLoading(false);
       });
       return () => unsubscribe();
     }
-  }, [workflowStep, inspectorName]);
+  }, [workflowStep, inspectorName, historyFilter]);
 
   const handleReturnHome = () => {
     setView('employee');
@@ -386,11 +391,13 @@ export default function App() {
         styleId: currentStyle.barcode,
         styleName: currentStyle.name,
         layoutImage: currentStyle.layoutImage || '',
+        frontImageUrl: currentStyle.frontImageUrl || '',
+        backImageUrl: currentStyle.backImageUrl || '',
         category: [...new Set(selectedDefects.map(d => d.category))].join(', '), 
         subCategory: selectedDefects.map(d => `${d.part}: ${d.subCategory}`).join(' | '), 
         part: [...new Set(selectedDefects.map(d => d.part))].join(', '), 
-        defects: selectedDefects,
-        customPoints: currentStyle.customPoints,
+        defects: selectedDefects || [],
+        customPoints: currentStyle.customPoints || [],
         status: 'pending',
         reporterEmail: user?.email || 'guest@scmgarments.com',
         reporterUid: user?.uid || 'guest',
@@ -511,13 +518,13 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-1 sm:gap-4">
-            <nav className="hidden md:flex bg-slate-100/50 p-1 rounded-xl border border-slate-200 mr-2">
+            <nav className="flex bg-slate-100/50 p-1 rounded-xl border border-slate-200 mr-2">
               <button 
                 onClick={() => setWorkflowStep('history')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${workflowStep === 'history' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${workflowStep === 'history' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <History className="w-3 h-3" />
-                History
+                <span className="hidden sm:inline">History</span>
               </button>
             </nav>
             <div className="flex bg-slate-100 p-0.5 sm:p-1 rounded-lg border border-slate-200 scale-90 sm:scale-100 origin-right">
@@ -542,14 +549,14 @@ export default function App() {
               </Button>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-3 pl-1 sm:pl-4 border-l border-slate-200">
-              <div className="text-right hidden sm:block">
-                <p className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-tight truncate max-w-[60px] sm:max-w-none">{inspectorName || user.name}</p>
+              <div className="text-right">
+                <p className="text-[8px] sm:text-[10px] font-black text-slate-900 uppercase tracking-tight truncate max-w-[60px] sm:max-w-none">{inspectorName || user.name}</p>
                 {inspectorName && (
                   <button 
                     onClick={() => setShowInspectorModal(true)}
-                    className="text-[7px] font-bold text-primary hover:underline uppercase block text-right"
+                    className="text-[6px] sm:text-[7px] font-bold text-primary hover:underline uppercase block text-right"
                   >
-                    Change Checking Inspector
+                    Change
                   </button>
                 )}
               </div>
@@ -993,12 +1000,26 @@ export default function App() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 mr-2">
+                          <button 
+                            onClick={() => setHistoryFilter('mine')}
+                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${historyFilter === 'mine' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+                          >
+                            Mine
+                          </button>
+                          <button 
+                            onClick={() => setHistoryFilter('all')}
+                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${historyFilter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+                          >
+                            All
+                          </button>
+                        </div>
                         <Button 
                           variant="ghost" 
                           onClick={() => setWorkflowStep('landing')} 
-                          className="h-10 text-[10px] font-black uppercase text-slate-400 hover:text-primary rounded-xl"
+                          className="h-10 text-[9px] sm:text-[10px] font-black uppercase text-slate-400 hover:text-primary rounded-xl"
                         >
-                          <Plus className="w-3.5 h-3.5 mr-2" /> New Scan
+                          <Plus className="w-3.5 h-3.5 mr-2" /> <span className="hidden sm:inline">New Scan</span>
                         </Button>
                       </div>
                     </CardHeader>

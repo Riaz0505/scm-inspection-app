@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-// ✅ 2. CORS Middleware added (app.use(express.json()) க்கு கீழே)
+// CORS Middleware
 app.use(express.json());
 app.use(cors({
   origin: "*",
@@ -24,22 +24,16 @@ app.use(cors({
   credentials: true
 }));
 
-app.get("/", (req, res) => {
-  res.send("Backend working ✅");
-});
-
-app.get("/api", (req, res) => {
-  res.json({ message: "API working ✅" });
-});
-
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Set up storage for uploaded files
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+console.log(`📁 Uploads directory: ${uploadsDir}`);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -77,6 +71,8 @@ const DefectSchema = new mongoose.Schema({
   styleId: String,
   styleName: String,
   layoutImage: String,
+  frontImageUrl: String,
+  backImageUrl: String,
   customPoints: [{
     id: String,
     label: String,
@@ -122,7 +118,7 @@ const CategorySchema = new mongoose.Schema({
 const CategoryModel = mongoose.model("Category", CategorySchema);
 
 // Fallback Data Helpers
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = path.join(process.cwd(), "data");
 const STYLES_FILE = path.join(DATA_DIR, "styles.json");
 const DEFECTS_FILE = path.join(DATA_DIR, "defects.json");
 const CATEGORIES_FILE = path.join(DATA_DIR, "categories.json");
@@ -206,14 +202,19 @@ const DEFAULT_CATEGORIES = [
   }
 ];
 
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-if (!fs.existsSync(STYLES_FILE) || fs.readFileSync(STYLES_FILE, "utf-8") === "[]") {
+if (!fs.existsSync(DATA_DIR)) {
+  console.log(`📁 Creating data directory: ${DATA_DIR}`);
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(STYLES_FILE)) {
   fs.writeFileSync(STYLES_FILE, JSON.stringify([
     { id: "style-1", barcode: "123456", name: "Classic White T-Shirt", type: "tshirt" }
   ]));
 }
-if (!fs.existsSync(DEFECTS_FILE)) fs.writeFileSync(DEFECTS_FILE, JSON.stringify([]));
-if (!fs.existsSync(CATEGORIES_FILE) || fs.readFileSync(CATEGORIES_FILE, "utf-8") === "[]") {
+if (!fs.existsSync(DEFECTS_FILE)) {
+  fs.writeFileSync(DEFECTS_FILE, JSON.stringify([]));
+}
+if (!fs.existsSync(CATEGORIES_FILE)) {
   fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(DEFAULT_CATEGORIES));
 }
 
@@ -343,6 +344,22 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/uploads", express.static(uploadsDir));
+console.log(`🚀 Serving static files from: ${uploadsDir} at /uploads`);
+
+// Add a test route to check if uploads directory is accessible
+app.get("/api/debug-uploads", (req, res) => {
+  try {
+    const files = fs.readdirSync(uploadsDir);
+    res.json({ 
+      exists: fs.existsSync(uploadsDir), 
+      path: uploadsDir, 
+      files: files,
+      cwd: process.cwd() 
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, path: uploadsDir });
+  }
+});
 
 app.get("/api/categories", async (req, res) => {
   try {
@@ -461,7 +478,12 @@ app.post("/api/styles", async (req, res) => {
 
 app.post("/api/upload", upload.single("image"), (req: any, res: any) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-  const imageUrl = `/uploads/${req.file.filename}`;
+  
+  // Use absolute URL if base URL is available to avoid relative path issues in some environments
+  const filename = req.file.filename;
+  const imageUrl = `/uploads/${filename}`;
+  
+  console.log(`✅ File uploaded: ${filename} -> ${imageUrl}`);
   res.json({ imageUrl });
 });
 
@@ -553,9 +575,14 @@ app.post("/api/login", (req, res) => {
 if (MONGODB_URI) {
   mongoose.connect(MONGODB_URI)
     .then(async () => {
-      console.log("Connected to MongoDB");
+      console.log("🟢 Connected to MongoDB Successfully");
     })
-    .catch(err => console.error("MongoDB connection error:", err));
+    .catch(err => {
+      console.error("🔴 MongoDB connection error:", err.message);
+      console.log("⚠️ Falling back to local JSON data in /data directory");
+    });
+} else {
+  console.log("ℹ️ No MONGODB_URI found. Using local JSON data in /data directory");
 }
 
 async function startServer() {

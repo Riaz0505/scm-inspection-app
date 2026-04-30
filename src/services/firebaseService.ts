@@ -40,11 +40,16 @@ export const firebaseService = {
   // Reports
   async saveReport(report: Omit<DefectReport, 'id'>) {
     try {
-      const docRef = await addDoc(collection(db, 'reports'), {
+      // Create a copy to sanitize undefined fields for Firestore
+      const sanitizedReport = {
         ...report,
+        customPoints: report.customPoints || [],
+        defects: report.defects || [],
         createdAt: new Date().toISOString(),
         serverTimestamp: Timestamp.now()
-      });
+      };
+
+      const docRef = await addDoc(collection(db, 'reports'), sanitizedReport);
       return docRef.id;
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'reports');
@@ -69,15 +74,6 @@ export const firebaseService = {
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'reports');
     });
-  },
-
-  async updateReportStatus(id: string, status: 'pending' | 'resolved') {
-    try {
-      const docRef = doc(db, 'reports', id);
-      await updateDoc(docRef, { status });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `reports/${id}`);
-    }
   },
 
   // Styles

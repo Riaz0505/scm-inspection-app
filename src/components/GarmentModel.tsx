@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { getApiUrl } from '../lib/api';
 
 interface GarmentModelProps {
   type: 'tshirt' | 'shorts' | 'combo';
@@ -205,10 +206,9 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
                     <div className="w-full h-full flex items-center justify-center p-4">
                       <img 
                         key={currentImage || view}
-                        src={currentImage || (view === 'front' ? "https://scmg-assets.s3.amazonaws.com/shorts_front.png" : "https://scmg-assets.s3.amazonaws.com/shorts_back.png")} 
+                        src={getApiUrl(currentImage || (view === 'front' ? "https://scmg-assets.s3.amazonaws.com/shorts_front.png" : "https://scmg-assets.s3.amazonaws.com/shorts_back.png"))} 
                         alt="Garment Layout" 
                         referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
                         className="w-full h-full object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)]" 
                       />
                     </div>

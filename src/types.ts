@@ -25,6 +25,8 @@ export interface DefectReport {
   styleId: string;
   styleName: string;
   layoutImage?: string;
+  frontImageUrl?: string;
+  backImageUrl?: string;
   category: string; // Primary category for quick reference
   subCategory: string; // List of sub-categories as string for quick reference
   part: string;

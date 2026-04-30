@@ -15,10 +15,15 @@ const getBaseUrl = () => {
     const isCapacitor = !!(window as any).Capacitor;
 
     // 3. If in browser and NOT localhost, use the current origin
-    if (!isLocalhost && !isCapacitor) return origin;
+    if (typeof window !== 'undefined' && !isLocalhost && !isCapacitor) {
+      return window.location.origin;
+    }
 
     // 4. Default Fallback for APK/Capacitor/Other
     // THIS URL MUST BE THE PUBLIC SHARED URL
+    // IF we are in a browser on any origin, use that origin instead of falling back
+    if (typeof window !== 'undefined') return window.location.origin;
+
     return 'https://scm-inspection-app.onrender.com';
   }
 
@@ -26,10 +31,32 @@ const getBaseUrl = () => {
 };
 
 export const getApiUrl = (path: string): string => {
+  if (!path) return '';
+  
+  // If it's already an absolute URL, return it as is
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+    return path;
+  }
+
+  // Use relative path if we are in the browser
+  // This ensures the request hits the same origin/port as the page
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    
+    // If we are on port 5173 (Vite default), try hitting port 3000 (Express default)
+    if (origin.includes(':5173')) {
+      return `http://localhost:3000/${cleanPath}`;
+    }
+    
+    return `/${cleanPath}`;
+  }
+
   const baseUrl = getBaseUrl();
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   
   if (baseUrl) {
+    if (path.startsWith(baseUrl)) return path;
     const divider = baseUrl.endsWith('/') ? '' : '/';
     return `${baseUrl}${divider}${cleanPath}`;
   }
