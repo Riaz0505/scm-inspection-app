@@ -899,11 +899,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <TabsTrigger value="categories" className="rounded-lg px-4 sm:px-8 py-2 text-[9px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap h-full">
               Categories
             </TabsTrigger>
-            <TabsTrigger value="styles" className="rounded-lg px-4 sm:px-8 py-2 text-[9px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap h-full">
-              Styles
-            </TabsTrigger>
             <TabsTrigger value="templates" className="rounded-lg px-4 sm:px-8 py-2 text-[9px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap h-full">
               Garment Templates
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-lg px-4 sm:px-8 py-2 text-[9px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap h-full">
+              Backend Settings
             </TabsTrigger>
             <TabsTrigger value="analytics" className="rounded-lg px-4 sm:px-8 py-2 text-[9px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap h-full">
               Analytics
@@ -1668,6 +1668,84 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </Card>
                 ))}
               </div>
+            </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="settings" className="mt-0 outline-none flex-1">
+          <div className="h-[500px] sm:h-[calc(100vh-450px)] min-h-[400px] overflow-y-auto scrollbar-hide -webkit-overflow-scrolling-touch pb-20">
+            <div className="max-w-2xl mx-auto space-y-6 pt-4">
+              <Card className="border-slate-200 border-2 shadow-sm">
+                <CardHeader className="bg-slate-50/50 p-6 border-b border-slate-100">
+                  <Badge className="bg-primary text-white border-none uppercase text-[8px] tracking-[0.2em] font-black px-2.5 py-1 mb-2">NETWORK CONFIG</Badge>
+                  <CardTitle className="text-xl font-black uppercase tracking-tight">API Connectivity</CardTitle>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Configure where the application talks to the backend</p>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="space-y-4">
+                    <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Current Active API URL</p>
+                      <code className="text-[12px] font-mono text-primary-foreground font-bold break-all">
+                        {getApiUrl('')}
+                      </code>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Manual API Override (Remote URL)</label>
+                      <div className="flex gap-2">
+                        <Input 
+                          placeholder="https://your-app.onrender.com"
+                          value={localStorage.getItem('scm_remote_api_url') || ''}
+                          onChange={(e) => {
+                            localStorage.setItem('scm_remote_api_url', e.target.value);
+                            // Refresh page to apply? 
+                          }}
+                          className="h-10 border-slate-200 focus:border-primary rounded-xl font-mono text-[11px]"
+                        />
+                        <Button 
+                          onClick={() => {
+                            localStorage.removeItem('scm_remote_api_url');
+                            window.location.reload();
+                          }}
+                          variant="outline"
+                          className="h-10 px-4 rounded-xl text-[10px] font-black uppercase border-slate-200"
+                        >
+                          Reset to Auto
+                        </Button>
+                      </div>
+                      <p className="text-[9px] font-bold text-slate-400">
+                        * Use this if you want this client to talk to your Render production server instead of the local dev server.
+                      </p>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black text-slate-900 uppercase">Troubleshooting Guide</h4>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                          <p className="text-[10px] font-medium text-slate-600">If you see <span className="font-bold text-red-500">404</span> errors, ensure your Backend is deployed and contains the latest code updates from AI Studio.</p>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                          <p className="text-[10px] font-medium text-slate-600">Push your changes to <span className="font-bold text-slate-900">GitHub</span> to trigger a new build on Render.</p>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                          <p className="text-[10px] font-medium text-slate-600">If using AI Studio Preview, it should point to the internal URL automatically.</p>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <Button 
+                      onClick={() => window.location.reload()}
+                      className="w-full h-11 bg-slate-900 text-white font-black uppercase tracking-widest rounded-xl hover:scale-[1.01] transition-transform"
+                    >
+                      Apply Changes & Reload
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </TabsContent>

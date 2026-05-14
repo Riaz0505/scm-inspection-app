@@ -13,13 +13,18 @@ const getBaseUrl = () => {
     const origin = window.location.origin;
     const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
 
-    // 2. If we're in a browser/webapp, use current origin
-    // This handles both the preview URL and any custom domain
-    if (origin.startsWith('http')) {
+    // If we're in AI Studio or any web environment, the current origin is usually the correct backend
+    if (origin.startsWith('http') && !isLocalhost) {
       return origin;
     }
 
-    // 3. Fallback for mobile apps (where origin might be local)
+    // If we are on localhost, and scm_remote_api_url is set, prefer that (for remote testing)
+    // Otherwise, use localhost.
+    if (isLocalhost) {
+      return savedUrl || origin;
+    }
+
+    // Fallback for mobile apps (where origin might be local) or non-http contexts
     return savedUrl || 'https://scm-inspection-app.onrender.com'; 
   }
 
