@@ -61,7 +61,6 @@ const StyleSchema = new mongoose.Schema({
   barcode: String,
   name: String,
   type: String,
-  categoryId: String,
   imageUrl: String,
   frontImageUrl: String,
   backImageUrl: String,
@@ -74,20 +73,6 @@ const StyleSchema = new mongoose.Schema({
   }]
 });
 const StyleModel = mongoose.model("Style", StyleSchema, "styles");
-
-const StyleCategorySchema = new mongoose.Schema({
-  id: String,
-  name: String,
-  frontImageUrl: String,
-  backImageUrl: String,
-  customPoints: [{
-    id: String,
-    label: String,
-    x: Number,
-    y: Number
-  }]
-});
-const StyleCategoryModel = mongoose.model("StyleCategory", StyleCategorySchema, "style_categories");
 
 const DefectSchema = new mongoose.Schema({
   reportId: String,
@@ -146,7 +131,6 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const STYLES_FILE = path.join(DATA_DIR, "styles.json");
 const DEFECTS_FILE = path.join(DATA_DIR, "defects.json");
 const CATEGORIES_FILE = path.join(DATA_DIR, "categories.json");
-const STYLE_CATEGORIES_FILE = path.join(DATA_DIR, "style_categories.json");
 
 const DEFAULT_CATEGORIES = [
   {
@@ -254,7 +238,6 @@ if (!fs.existsSync(DATA_DIR)) {
 readJsonFile(STYLES_FILE, [{ id: "style-1", barcode: "123456", name: "Classic White T-Shirt", type: "tshirt" }]);
 readJsonFile(DEFECTS_FILE, []);
 readJsonFile(CATEGORIES_FILE, DEFAULT_CATEGORIES);
-readJsonFile(STYLE_CATEGORIES_FILE, []);
 
 // API Routes
 app.post("/api/admin/seed", async (req, res) => {
@@ -561,67 +544,6 @@ app.get("/api/styles", async (req, res) => {
   } catch (error: any) {
     console.error("❌ Fetch Styles Error:", error.message);
     res.status(500).json({ message: "Failed to fetch styles", error: error.message });
-  }
-});
-
-// Style Templates (Categories for layouts)
-app.get("/api/style-categories", async (req, res) => {
-  try {
-    if (MONGODB_URI && mongoose.connection.readyState === 1) {
-      const cats = await StyleCategoryModel.find().lean();
-      res.json(cats);
-    } else {
-      const cats = readJsonFile(STYLE_CATEGORIES_FILE, []);
-      res.json(cats);
-    }
-  } catch (error: any) {
-    res.status(500).json({ message: "Failed to fetch style categories" });
-  }
-});
-
-app.post("/api/style-categories", async (req, res) => {
-  try {
-    const data = req.body;
-    if (MONGODB_URI && mongoose.connection.readyState === 1) {
-      const existing = await StyleCategoryModel.findOne({ name: data.name });
-      if (existing) {
-        Object.assign(existing, data);
-        await existing.save();
-        return res.json(existing);
-      }
-      const newCat = new StyleCategoryModel({ ...data, id: data.id || Date.now().toString() });
-      await newCat.save();
-      res.status(201).json(newCat);
-    } else {
-      const cats = readJsonFile(STYLE_CATEGORIES_FILE, []);
-      const index = cats.findIndex((c: any) => c.name === data.name);
-      if (index !== -1) {
-        cats[index] = { ...cats[index], ...data };
-      } else {
-        cats.push({ id: Date.now().toString(), ...data });
-      }
-      fs.writeFileSync(STYLE_CATEGORIES_FILE, JSON.stringify(cats, null, 2));
-      res.json(data);
-    }
-  } catch (error: any) {
-    res.status(500).json({ message: "Failed to save style category" });
-  }
-});
-
-app.delete("/api/style-categories/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    if (MONGODB_URI && mongoose.connection.readyState === 1) {
-      await StyleCategoryModel.deleteOne({ id });
-      res.json({ success: true });
-    } else {
-      let cats = readJsonFile(STYLE_CATEGORIES_FILE, []);
-      cats = cats.filter((c: any) => c.id !== id);
-      fs.writeFileSync(STYLE_CATEGORIES_FILE, JSON.stringify(cats, null, 2));
-      res.json({ success: true });
-    }
-  } catch (error: any) {
-    res.status(500).json({ message: "Failed to delete" });
   }
 });
 

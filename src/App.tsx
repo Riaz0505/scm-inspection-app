@@ -81,7 +81,6 @@ export default function App() {
     const saved = localStorage.getItem('scm_saved_inspectors');
     return saved ? JSON.parse(saved) : ['Riaz', 'Aijaz']; // Default starters
   });
-  const [isDualView, setIsDualView] = useState(true);
   const [showInspectorModal, setShowInspectorModal] = useState(false);
   const [tempInspectorName, setTempInspectorName] = useState('');
   const [historyReports, setHistoryReports] = useState<DefectReport[]>([]);
@@ -388,19 +387,15 @@ export default function App() {
             barcode: codeToSearch,
             name: 'Classic White T-Shirt (Demo)',
             type: 'tshirt',
-            // Using placeholder SVG images instead of people
-            frontImageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600&fm=jpg&q=0&blur=1000', // Heavily blurred original or replace
-            backImageUrl: '',
+            frontImageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600',
+            backImageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600&rot=180', // Flip/rot for demo
             customPoints: [
-              { id: 'F-NECK', label: 'NECK / COLLAR', x: 50, y: 24 },
-              { id: 'F-CHEST', label: 'CHEST', x: 50, y: 45 },
-              { id: 'B-NECK', label: 'BACK NECK', x: 50, y: 22 },
-              { id: 'B-BODY', label: 'BACK BODY', x: 50, y: 60 }
+              { id: 'F-A', label: 'CHEST LOGO', x: 50, y: 40 },
+              { id: 'F-B', label: 'FRONT COLLAR', x: 50, y: 15 },
+              { id: 'B-C', label: 'BACK COLLAR', x: 50, y: 12 },
+              { id: 'B-D', label: 'BACK PRINT', x: 50, y: 45 }
             ]
           };
-          // Better: Use a reliable clean t-shirt image
-          dummyStyle.frontImageUrl = 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600';
-          dummyStyle.backImageUrl = 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600&rot=180';
         }
         
         setBarcode(codeToSearch);
@@ -767,11 +762,9 @@ export default function App() {
                               <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900">Mark Mistakes</CardTitle>
                               <CardDescription className="text-[10px] font-bold text-slate-400">Touch parts of the garment to log issues</CardDescription>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <div className="flex flex-col items-end">
-                                <Badge className="bg-primary text-white border-none uppercase text-[8px] tracking-[0.2em] font-black px-2.5 py-1 mb-1">INTERACTIVE</Badge>
-                                <span className="text-[9px] font-mono text-slate-300">UID: {currentStyle.barcode}</span>
-                              </div>
+                            <div className="flex flex-col items-end">
+                              <Badge className="bg-primary text-white border-none uppercase text-[8px] tracking-[0.2em] font-black px-2.5 py-1 mb-1">INTERACTIVE</Badge>
+                              <span className="text-[9px] font-mono text-slate-300">UID: {currentStyle.barcode}</span>
                             </div>
                           </div>
                         </CardHeader>
@@ -783,7 +776,6 @@ export default function App() {
                               frontImageUrl={currentStyle.frontImageUrl}
                               backImageUrl={currentStyle.backImageUrl}
                               customPoints={currentStyle.customPoints}
-                              dualView={isDualView}
                               onPartClick={(part) => {
                                 setSelectedParts(prev => 
                                   prev.includes(part) ? prev.filter(p => p !== part) : [...prev, part]

@@ -5,19 +5,10 @@ export interface Style {
   barcode: string;
   name: string;
   type: GarmentType;
-  categoryId?: string; // New field for template reference
   imageUrl?: string;
   frontImageUrl?: string;
   backImageUrl?: string;
   layoutImage?: string;
-  customPoints?: { id: string; label: string; x: number; y: number }[];
-}
-
-export interface StyleCategory {
-  id: string;
-  name: string;
-  frontImageUrl?: string;
-  backImageUrl?: string;
   customPoints?: { id: string; label: string; x: number; y: number }[];
 }
 
