@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DefectReport, DefectCategory, Style, GarmentType } from '../types';
+import { DefectReport, DefectCategory, Style, GarmentType, StyleCategory } from '../types';
 import { GarmentModel } from './GarmentModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { CheckCircle2, Clock, AlertCircle, User, Tag, MapPin, Layers, Save, Image as ImageIcon, ChevronLeft, Eye, X, ExternalLink, Upload, Loader2, BarChart3, TrendingUp, Users, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, User, Tag, MapPin, Layers, Save, Image as ImageIcon, ChevronLeft, Eye, X, ExternalLink, Upload, Loader2, BarChart3, TrendingUp, Users, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -346,7 +346,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [globalStats, setGlobalStats] = useState<{
     styles: { name: string, count: number }[],
     parts: { name: string, count: number }[],
-    operators: { email: string, count: number }[]
+    operators: { email: string, count: number }[],
+    workerPerformance: { name: string, operation: string, count: number, topDefect: string }[]
   } | null>(null);
   const [viewingReport, setViewingReport] = useState<DefectReport | null>(() => {
     const saved = localStorage.getItem('scm_viewingReport');
@@ -357,6 +358,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   });
   const [styles, setStyles] = useState<Style[]>([]);
   const [newStyle, setNewStyle] = useState<Partial<Style>>({ type: 'tshirt' });
+  const [styleCategories, setStyleCategories] = useState<StyleCategory[]>([]);
+  const [newStyleCategory, setNewStyleCategory] = useState<Partial<StyleCategory>>({});
   const [uploading, setUploading] = useState(false);
   const [dbStatus, setDbStatus] = useState<{mongo: string, mode: string} | null>(null);
 
@@ -369,6 +372,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const fetchStyleCategories = async () => {
+    try {
+      const data = await fetchApi('/api/style-categories');
+      setStyleCategories(data);
+    } catch (e) {
+      console.error('Failed to fetch style categories', e);
+    }
+  };
+
   // Persist viewingReport
   useEffect(() => {
     if (viewingReport) {
@@ -378,7 +390,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [viewingReport]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'layoutImage' | 'frontImageUrl' | 'backImageUrl' = 'layoutImage') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'layoutImage' | 'frontImageUrl' | 'backImageUrl' = 'layoutImage', isCategory: boolean = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -391,12 +403,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         method: 'POST',
         body: formData,
       });
-      setNewStyle(p => ({ ...p, [targetField]: data.imageUrl }));
+      
+      if (isCategory) {
+        setNewStyleCategory(p => ({ ...p, [targetField]: data.imageUrl }));
+      } else {
+        setNewStyle(p => ({ ...p, [targetField]: data.imageUrl }));
+      }
+      
       toast.success(`${targetField.replace('ImageUrl', '').charAt(0).toUpperCase() + targetField.replace('ImageUrl', '').slice(1)} image uploaded`);
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleSaveStyleCategory = async () => {
+    if (!newStyleCategory.name) {
+      toast.error('Category Name is required');
+      return;
+    }
+    
+    try {
+      await fetchApi('/api/style-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStyleCategory)
+      });
+      toast.success('Garment Template saved');
+      setNewStyleCategory({});
+      fetchStyleCategories();
+    } catch (e) {
+      toast.error('Failed to save template');
+    }
+  };
+
+  const deleteStyleCategory = async (id: string) => {
+    try {
+      await fetchApi(`/api/style-categories/${id}`, { method: 'DELETE' });
+      toast.success('Template deleted');
+      fetchStyleCategories();
+    } catch (e) {
+      toast.error('Failed to delete template');
     }
   };
 
@@ -437,39 +485,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [mapperView, setMapperView] = useState<'front' | 'back'>('front');
 
-  const handlePointAdd = (e: React.MouseEvent<HTMLDivElement>) => {
-    const currentImageUrl = mapperView === 'front' ? (newStyle.frontImageUrl || newStyle.layoutImage) : newStyle.backImageUrl;
-    if (!currentImageUrl) return;
+  const handlePointAdd = (e: React.MouseEvent<HTMLDivElement>, isCategory: boolean = false) => {
+    const target = isCategory ? newStyleCategory : newStyle;
+    const currentImageUrl = mapperView === 'front' ? (target.frontImageUrl || (target as any).layoutImage) : target.backImageUrl;
+    if (!currentImageUrl) {
+      toast.error("Upload an image first to mark points");
+      return;
+    }
     
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Number(((e.clientX - rect.left) / rect.width * 100).toFixed(2));
     const y = Number(((e.clientY - rect.top) / rect.height * 100).toFixed(2));
     
     // Generate next alphabet ID
-    const pointCount = newStyle.customPoints?.length || 0;
+    const pointCount = target.customPoints?.length || 0;
     const id = String.fromCharCode(65 + (pointCount % 26)) + (pointCount >= 26 ? Math.floor(pointCount / 26) : '');
     const prefix = mapperView === 'back' ? 'B-' : 'F-';
     const finalId = prefix + id;
     const label = `Marker ${finalId}`;
     
-    setNewStyle(prev => ({
-      ...prev,
-      customPoints: [...(prev.customPoints || []), { id: finalId, label, x, y }]
-    }));
+    const newPoints = [...(target.customPoints || []), { id: finalId, label, x, y }];
+    
+    if (isCategory) {
+      setNewStyleCategory(prev => ({ ...prev, customPoints: newPoints }));
+    } else {
+      setNewStyle(prev => ({ ...prev, customPoints: newPoints }));
+    }
   };
 
-  const removePoint = (id: string) => {
-    setNewStyle(prev => ({
-      ...prev,
-      customPoints: prev.customPoints?.filter(p => p.id !== id)
-    }));
+  const removePoint = (id: string, isCategory: boolean = false) => {
+    if (isCategory) {
+      setNewStyleCategory(prev => ({
+        ...prev,
+        customPoints: prev.customPoints?.filter(p => p.id !== id)
+      }));
+    } else {
+      setNewStyle(prev => ({
+        ...prev,
+        customPoints: prev.customPoints?.filter(p => p.id !== id)
+      }));
+    }
   };
 
-  const updatePointLabel = (id: string, label: string) => {
-    setNewStyle(prev => ({
-      ...prev,
-      customPoints: prev.customPoints?.map(p => p.id === id ? { ...p, label } : p)
-    }));
+  const updatePointLabel = (id: string, label: string, isCategory: boolean = false) => {
+    if (isCategory) {
+      setNewStyleCategory(prev => ({
+        ...prev,
+        customPoints: prev.customPoints?.map(p => p.id === id ? { ...p, label } : p)
+      }));
+    } else {
+      setNewStyle(prev => ({
+        ...prev,
+        customPoints: prev.customPoints?.map(p => p.id === id ? { ...p, label } : p)
+      }));
+    }
   };
 
   const fetchReports = async () => {
@@ -519,13 +588,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (reports.length > 0) {
       const styleCounts: Record<string, number> = {};
       const partCounts: Record<string, number> = {};
-      const opCounts: Record<string, number> = {};
+      const opCounts: Record<string, number> = {}; // Inspector counts
+      const workerCounts: Record<string, { operation: string, count: number, defects: Record<string, number> }> = {};
 
       reports.forEach(r => {
         const style = r.styleName || 'Unknown';
-        styleCounts[style] = (styleCounts[style] || 0) + (r.defects?.length || 1);
-        const opName = r.inspectorName || r.reporterEmail || 'Unknown';
-        opCounts[opName] = (opCounts[opName] || 0) + (r.defects?.length || 1);
+        const defectCount = r.defects?.length || 1;
+        
+        styleCounts[style] = (styleCounts[style] || 0) + defectCount;
+        
+        const inspectorName = r.inspectorName || r.reporterEmail || 'Unknown';
+        opCounts[inspectorName] = (opCounts[inspectorName] || 0) + defectCount;
+        
+        // Add Worker/Operator tracking
+        if (r.operatorName) {
+          const key = `${r.operatorName}-${r.operation || 'N/A'}`;
+          if (!workerCounts[key]) {
+            workerCounts[key] = { 
+              operation: r.operation || 'N/A', 
+              count: 0, 
+              defects: {} 
+            };
+          }
+          workerCounts[key].count += defectCount;
+          
+          // Track specific defects for this worker
+          if (r.defects && Array.isArray(r.defects)) {
+            r.defects.forEach(d => {
+              workerCounts[key].defects[d.subCategory] = (workerCounts[key].defects[d.subCategory] || 0) + 1;
+            });
+          }
+        }
         
         if (r.defects && Array.isArray(r.defects)) {
           r.defects.forEach(d => {
@@ -539,10 +632,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
       });
 
+      // Find top defect for each worker
+      const workerPerformance = Object.entries(workerCounts).map(([nameOperation, data]) => {
+        const [name] = nameOperation.split('-');
+        const topDefect = Object.entries(data.defects)
+          .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+          
+        return {
+          name,
+          operation: data.operation,
+          count: data.count,
+          topDefect
+        };
+      }).sort((a, b) => b.count - a.count).slice(0, 15);
+
       setGlobalStats({
         styles: Object.entries(styleCounts).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count).slice(0, 10),
         parts: Object.entries(partCounts).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count).slice(0, 15),
-        operators: Object.entries(opCounts).map(([email, count]) => ({ email, count })).sort((a,b) => b.count - a.count).slice(0, 10)
+        operators: Object.entries(opCounts).map(([email, count]) => ({ email, count })).sort((a,b) => b.count - a.count).slice(0, 10),
+        workerPerformance
       });
     }
   };
@@ -551,6 +659,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     fetchStyles();
     fetchReports();
     fetchHealth();
+    fetchStyleCategories();
+    
     // Also keep Firebase listener for true real-time if available
     const unsubscribe = firebaseService.listenToReports((data) => {
       if (data && data.length >= reports.length) {
@@ -559,16 +669,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     });
 
-    // Periodic poll for stats
-    const interval = setInterval(() => {
+    // Periodic poll for stats - more frequent when on analytics tab
+    const statsInterval = setInterval(() => {
       fetchGlobalStats();
-    }, 30000);
+    }, 15000);
 
     return () => {
       unsubscribe();
-      clearInterval(interval);
+      clearInterval(statsInterval);
     };
   }, []);
+
+  // Recalculate stats when reports change - much more efficient than intervals
+  useEffect(() => {
+    if (reports.length > 0) {
+      calculateLocalStats();
+    }
+  }, [reports]);
 
   useEffect(() => {
     // Synchronize local state with server truth whenever categories prop updates
@@ -738,7 +855,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 {dbStatus.mongo !== 'connected' && (
                   <span className="text-[7px] font-bold text-rose-400 uppercase tracking-tighter">
-                    (Warnings: Check MongoDB Secret in Settings)
+                    
                   </span>
                 )}
               </div>
@@ -784,6 +901,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </TabsTrigger>
             <TabsTrigger value="styles" className="rounded-lg px-4 sm:px-8 py-2 text-[9px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap h-full">
               Styles
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="rounded-lg px-4 sm:px-8 py-2 text-[9px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap h-full">
+              Garment Templates
             </TabsTrigger>
             <TabsTrigger value="analytics" className="rounded-lg px-4 sm:px-8 py-2 text-[9px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap h-full">
               Analytics
@@ -1053,17 +1173,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Garment Type Base</label>
-                    <select 
-                      value={newStyle.type}
-                      onChange={e => setNewStyle(p => ({ ...p, type: e.target.value as any }))}
-                      className="w-full h-10 border-slate-200 border rounded-xl px-3 text-[12px] font-bold uppercase outline-none focus:border-primary"
-                    >
-                      <option value="tshirt">T-Shirt</option>
-                      <option value="shorts">Shorts</option>
-                      <option value="combo">Combo Pack</option>
-                    </select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Garment Type Base</label>
+                      <select 
+                        value={newStyle.type}
+                        onChange={e => setNewStyle(p => ({ ...p, type: e.target.value as any }))}
+                        className="w-full h-10 border-slate-200 border rounded-xl px-3 text-[12px] font-bold uppercase outline-none focus:border-primary"
+                      >
+                        <option value="tshirt">T-Shirt</option>
+                        <option value="shorts">Shorts</option>
+                        <option value="combo">Combo Pack</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-primary uppercase tracking-widest">Use Garment Template</label>
+                      <select 
+                        value={newStyle.categoryId || ''}
+                        onChange={e => {
+                          const catId = e.target.value;
+                          const selectedTemplate = styleCategories.find(c => c.id === catId);
+                          if (selectedTemplate) {
+                            setNewStyle(p => ({
+                              ...p,
+                              categoryId: catId,
+                              frontImageUrl: selectedTemplate.frontImageUrl || p.frontImageUrl,
+                              backImageUrl: selectedTemplate.backImageUrl || p.backImageUrl,
+                              customPoints: selectedTemplate.customPoints || p.customPoints || []
+                            }));
+                            toast.success(`Template "${selectedTemplate.name}" applied`);
+                          } else {
+                            setNewStyle(p => ({ ...p, categoryId: undefined }));
+                          }
+                        }}
+                        className="w-full h-10 border-primary/20 border-2 bg-primary/5 rounded-xl px-3 text-[12px] font-bold uppercase outline-none focus:border-primary text-primary"
+                      >
+                        <option value="">-- No Template --</option>
+                        {styleCategories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1289,6 +1439,238 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
         </TabsContent>
+        <TabsContent value="templates" className="mt-0 outline-none flex-1">
+          <div className="h-[500px] sm:h-[calc(100vh-450px)] min-h-[400px] overflow-y-auto scrollbar-hide -webkit-overflow-scrolling-touch pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pr-4">
+              {/* Add Template Section */}
+              <Card className="border-slate-200 shadow-sm border-2">
+                <CardHeader className="p-6 bg-slate-50/50">
+                  <Badge variant="outline" className="w-fit mb-2 text-[8px] font-black tracking-[0.2em] border-primary text-primary">Templates</Badge>
+                  <CardTitle className="text-xl font-black uppercase tracking-tighter">Garment Template Setup</CardTitle>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Create reusable layouts (e.g. Round Neck)</p>
+                </CardHeader>
+                <CardContent className="p-6 space-y-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Template Name</label>
+                    <Input 
+                      placeholder="e.g. Round Neck T-shirt" 
+                      value={newStyleCategory.name || ''}
+                      onChange={e => setNewStyleCategory(p => ({ ...p, name: e.target.value }))}
+                      className="h-10 border-slate-200 focus:border-primary rounded-xl"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between gap-2">
+                        Front Image
+                        <label className="cursor-pointer">
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'frontImageUrl', true)} disabled={uploading} />
+                          <span className="text-[8px] font-black text-primary hover:underline flex items-center gap-1">
+                            {uploading ? <Loader2 className="w-2 h-2 animate-spin" /> : <Upload className="w-2 h-2" />}
+                            UPLOAD
+                          </span>
+                        </label>
+                      </label>
+                      <div className="flex gap-2">
+                        {newStyleCategory.frontImageUrl && (
+                          <div className="w-10 h-10 rounded-lg border border-slate-200 overflow-hidden flex-shrink-0 bg-white">
+                            <img src={getApiUrl(newStyleCategory.frontImageUrl)} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                          </div>
+                        )}
+                        <Input 
+                          placeholder="Front view URL..." 
+                          value={newStyleCategory.frontImageUrl || ''}
+                          onChange={e => setNewStyleCategory(p => ({ ...p, frontImageUrl: e.target.value }))}
+                          className="h-10 border-slate-200 focus:border-primary rounded-xl text-[10px] flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between gap-2">
+                        Back Image
+                        <label className="cursor-pointer">
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'backImageUrl', true)} disabled={uploading} />
+                          <span className="text-[8px] font-black text-primary hover:underline flex items-center gap-1">
+                            {uploading ? <Loader2 className="w-2 h-2 animate-spin" /> : <Upload className="w-2 h-2" />}
+                            UPLOAD
+                          </span>
+                        </label>
+                      </label>
+                      <div className="flex gap-2">
+                        {newStyleCategory.backImageUrl && (
+                          <div className="w-10 h-10 rounded-lg border border-slate-200 overflow-hidden flex-shrink-0 bg-white">
+                            <img src={getApiUrl(newStyleCategory.backImageUrl)} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                          </div>
+                        )}
+                        <Input 
+                          placeholder="Back view URL..." 
+                          value={newStyleCategory.backImageUrl || ''}
+                          onChange={e => setNewStyleCategory(p => ({ ...p, backImageUrl: e.target.value }))}
+                          className="h-10 border-slate-200 focus:border-primary rounded-xl text-[10px] flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {(newStyleCategory.frontImageUrl || newStyleCategory.backImageUrl) && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                            Template Mapper
+                          </label>
+                          <div className="flex gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                             <button
+                                onClick={() => setMapperView('front')}
+                                className={`px-3 py-1 text-[8px] font-black rounded-md transition-all ${mapperView === 'front' ? 'bg-white shadow-sm text-primary' : 'text-slate-400'}`}
+                             >
+                               FRONT
+                             </button>
+                             <button
+                                onClick={() => setMapperView('back')}
+                                className={`px-3 py-1 text-[8px] font-black rounded-md transition-all ${mapperView === 'back' ? 'bg-white shadow-sm text-primary' : 'text-slate-400'}`}
+                             >
+                               BACK
+                             </button>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 text-[8px] font-bold text-red-500"
+                          onClick={() => setNewStyleCategory(p => ({ ...p, customPoints: [] }))}
+                        >
+                          Clear All Template Points
+                        </Button>
+                      </div>
+                      
+                      <div 
+                        className="relative aspect-square bg-slate-100 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden cursor-crosshair group"
+                        onClick={(e) => handlePointAdd(e, true)}
+                      >
+                        <img 
+                          key={mapperView === 'front' ? (newStyleCategory.frontImageUrl || '') : newStyleCategory.backImageUrl}
+                          src={getApiUrl(mapperView === 'front' ? (newStyleCategory.frontImageUrl || '') : (newStyleCategory.backImageUrl || ''))} 
+                          alt="Layout mapping" 
+                          className="w-full h-full object-contain p-4 pointer-events-none select-none"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-primary/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <p className="text-[10px] font-black text-primary bg-white px-3 py-1.5 rounded-full shadow-lg uppercase tracking-widest border border-primary/20">Mark Template Points ({mapperView.toUpperCase()})</p>
+                        </div>
+                        
+                        {newStyleCategory.customPoints?.map((point) => {
+                          const isBackPoint = point.id.startsWith('B-');
+                          if (mapperView === 'front' && isBackPoint) return null;
+                          if (mapperView === 'back' && !isBackPoint) return null;
+
+                          return (
+                            <div
+                              key={point.id}
+                              className="absolute -translate-x-1/2 -translate-y-1/2 group/point"
+                              style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className={`w-8 h-8 rounded-full ${isBackPoint ? 'bg-rose-500' : 'bg-primary'} text-white text-[10px] font-black flex items-center justify-center shadow-lg border-2 border-white`}>
+                                {point.id.replace('F-', '').replace('B-', '')}
+                              </div>
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-slate-900 text-white text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">
+                                {point.label}
+                              </div>
+                              <button 
+                                onClick={() => removePoint(point.id, true)}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/point:opacity-100 transition-opacity shadow-sm"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {newStyleCategory.customPoints && newStyleCategory.customPoints.length > 0 && (
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 scrollbar-hide border-t border-slate-100 pt-3">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Template Marker Labels:</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {newStyleCategory.customPoints.map(p => (
+                              <div key={p.id} className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100 group/item">
+                                <div className="w-6 h-6 rounded bg-primary text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                                  {p.id}
+                                </div>
+                                <Input 
+                                  value={p.label}
+                                  onChange={(e) => updatePointLabel(p.id, e.target.value, true)}
+                                  className="h-7 text-[10px] font-bold border-none focus-visible:ring-0 bg-transparent p-0 uppercase"
+                                  placeholder="Enter Location Name..."
+                                />
+                                <button 
+                                  onClick={() => removePoint(p.id, true)}
+                                  className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-slate-400 hover:text-red-500"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <Button 
+                    onClick={handleSaveStyleCategory}
+                    className="w-full h-12 bg-primary text-white font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.01] transition-transform"
+                  >
+                    <Save className="w-4 h-4 mr-2" /> Save Template
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* List Section */}
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                  Saved Templates <Badge className="bg-slate-100 text-slate-900 border-none h-4 px-1.5 text-[8px]">{styleCategories.length}</Badge>
+                </h3>
+                {styleCategories.map(cat => (
+                  <Card key={cat.id} className="border-slate-200 shadow-sm hover:border-primary transition-all group overflow-hidden">
+                    <div className="p-4 flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-lg bg-slate-50 border border-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
+                        {cat.frontImageUrl ? (
+                          <img src={getApiUrl(cat.frontImageUrl)} alt={cat.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-200" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-black text-slate-900 uppercase tracking-tight truncate">{cat.name}</h4>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">{cat.customPoints?.length || 0} POINTS MARKED</p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setNewStyleCategory(cat)}
+                          className="h-8 w-8 p-0 rounded-full hover:bg-slate-100"
+                        >
+                          <Eye className="w-4 h-4 text-slate-400" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => deleteStyleCategory(cat.id)}
+                          className="h-8 w-8 p-0 rounded-full hover:bg-red-50 hover:text-red-500"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
         <TabsContent value="analytics" className="mt-0 outline-none flex-1">
           <div className="h-[500px] sm:h-[calc(100vh-450px)] min-h-[400px] overflow-y-auto scrollbar-hide -webkit-overflow-scrolling-touch pb-20">
             <div className="space-y-8 pr-4">
@@ -1373,46 +1755,103 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </Card>
               </div>
 
-              {/* Operator Leaderboard */}
-              <Card className="border-slate-200 shadow-sm">
-                <CardHeader className="p-6">
-                  <div className="flex items-center gap-3">
-                    <Users className="w-5 h-5 text-blue-500" />
-                    <CardTitle className="text-sm font-black uppercase tracking-widest">Inspector Productivity Logs</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6 pt-0">
-                  <div className="rounded-2xl border border-slate-100 overflow-hidden">
-                    <table className="w-full text-left">
-                      <thead className="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Inspector Name / Email</th>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Faults Identified</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {globalStats?.operators.map((op, i) => (
-                          <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
-                                  <User className="w-3.5 h-3.5 text-slate-400" />
-                                </div>
-                                <span className="text-[11px] font-bold text-slate-900">{op.email}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <Badge className={op.count > 50 ? "bg-rose-100 text-rose-600 border-none" : "bg-blue-100 text-blue-600 border-none"}>
-                                {op.count} LOGS
-                              </Badge>
-                            </td>
+              {/* Operator & Worker Performance Sections */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+                {/* Operator Leaderboard (Existing) */}
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader className="p-6">
+                    <div className="flex items-center gap-3">
+                      <Users className="w-5 h-5 text-blue-500" />
+                      <CardTitle className="text-sm font-black uppercase tracking-widest">Inspector Output</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6 pt-0">
+                    <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-50 border-b border-slate-100">
+                          <tr>
+                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Inspector</th>
+                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Reports</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {globalStats?.operators.map((op, i) => (
+                            <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
+                                    <User className="w-3.5 h-3.5 text-slate-400" />
+                                  </div>
+                                  <span className="text-[11px] font-bold text-slate-900 truncate max-w-[120px]">{op.email}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <Badge className="bg-blue-100 text-blue-600 border-none text-[10px]">
+                                  {op.count}
+                                </Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Worker Fault Log (New) */}
+                <Card className="border-slate-200 shadow-sm border-rose-100 border-2">
+                  <CardHeader className="p-6">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-rose-500" />
+                      <CardTitle className="text-sm font-black uppercase tracking-widest">Worker Defect Logs</CardTitle>
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">High-frequency mistakes by worker & operation</p>
+                  </CardHeader>
+                  <CardContent className="p-6 pt-0">
+                    <div className="rounded-2xl border border-rose-50 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-rose-50/50 border-b border-rose-100">
+                          <tr>
+                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-rose-800">Worker</th>
+                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-rose-800">Operation</th>
+                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-rose-800 text-right">Mistakes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-rose-50">
+                          {globalStats?.workerPerformance?.map((wp, i) => (
+                            <tr key={i} className="hover:bg-rose-50/30 transition-colors">
+                              <td className="px-4 py-4">
+                                <div className="space-y-1">
+                                  <span className="text-[11px] font-black text-slate-900 uppercase block">{wp.name}</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Common Defect:</span>
+                                    <span className="text-[8px] font-black text-rose-500 uppercase">{wp.topDefect}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4">
+                                <Badge variant="outline" className="text-[9px] font-black text-slate-400 border-slate-200 px-2">
+                                  {wp.operation}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-4 text-right">
+                                <span className="text-sm font-black text-rose-600">{wp.count}</span>
+                              </td>
+                            </tr>
+                          ))}
+                          {(!globalStats?.workerPerformance || globalStats.workerPerformance.length === 0) && (
+                            <tr>
+                              <td colSpan={3} className="px-4 py-12 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                No worker mistakes logged yet
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </TabsContent>

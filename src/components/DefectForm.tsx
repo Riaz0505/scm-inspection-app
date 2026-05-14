@@ -360,7 +360,7 @@ export const DefectForm: React.FC<DefectFormProps> = ({
           </ScrollArea>
 
           {/* Desktop Summary Footer */}
-          <div className="hidden lg:block p-6 bg-white border-t border-slate-100 space-y-4 flex-shrink-0">
+          <div className="hidden lg:block p-6 bg-white border-t border-slate-100 space-y-4 flex-shrink-0 mt-auto sticky bottom-0 z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Operation</label>
@@ -390,7 +390,7 @@ export const DefectForm: React.FC<DefectFormProps> = ({
             <Button 
               disabled={basket.length === 0}
               onClick={handleSubmit}
-              className="w-full h-16 bg-primary hover:bg-primary/95 text-white font-black uppercase tracking-[0.15em] rounded-2xl shadow-xl shadow-primary/30 transition-all active:scale-95 disabled:bg-slate-200 disabled:shadow-none flex items-center justify-center gap-3 text-xs"
+              className="w-full h-16 bg-primary hover:bg-primary/95 text-white font-black uppercase tracking-[0.15em] rounded-2xl shadow-xl shadow-primary/30 transition-all active:scale-95 disabled:bg-slate-200 disabled:shadow-none flex items-center justify-center gap-3 text-[11px]"
             >
               <Send className="w-4 h-4" /> SUBMIT INSPECTION
             </Button>

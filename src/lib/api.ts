@@ -6,21 +6,21 @@ const getBaseUrl = () => {
   if (envUrl) return envUrl;
 
   if (typeof window !== 'undefined') {
+    // If it's onrender.com, it might be a stale fallback, check if we should override it
     const savedUrl = localStorage.getItem('scm_remote_api_url');
-    if (savedUrl) return savedUrl;
+    if (savedUrl && !savedUrl.includes('onrender.com')) return savedUrl;
 
     const origin = window.location.origin;
     const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
 
     // 2. If we're in a browser/webapp, use current origin
     // This handles both the preview URL and any custom domain
-    if (origin.startsWith('http') && !isLocalhost) {
+    if (origin.startsWith('http')) {
       return origin;
     }
 
     // 3. Fallback for mobile apps (where origin might be local)
-    // Try to guess the server URL from the current window location if available
-    return 'https://scm-inspection-app.onrender.com'; // Absolute fallback
+    return savedUrl || 'https://scm-inspection-app.onrender.com'; 
   }
 
   return '';
