@@ -371,8 +371,8 @@ export default function App() {
             barcode: codeToSearch,
             name: 'Flex Shorts (Demo)',
             type: 'shorts',
-            frontImageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&q=80&w=600',
-            backImageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&q=80&w=600&rot=180',
+            frontImageUrl: '',
+            backImageUrl: '',
             customPoints: [
               { id: 'F-W', label: 'WAISTBAND', x: 50, y: 15 },
               { id: 'F-L', label: 'LEFT LEG', x: 30, y: 70 },
@@ -387,8 +387,8 @@ export default function App() {
             barcode: codeToSearch,
             name: 'Classic White T-Shirt (Demo)',
             type: 'tshirt',
-            frontImageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600',
-            backImageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600&rot=180', // Flip/rot for demo
+            frontImageUrl: '',
+            backImageUrl: '', // Flip/rot for demo
             customPoints: [
               { id: 'F-A', label: 'CHEST LOGO', x: 50, y: 40 },
               { id: 'F-B', label: 'FRONT COLLAR', x: 50, y: 15 },
@@ -776,6 +776,7 @@ export default function App() {
                               frontImageUrl={currentStyle.frontImageUrl}
                               backImageUrl={currentStyle.backImageUrl}
                               customPoints={currentStyle.customPoints}
+                              dualView={true}
                               onPartClick={(part) => {
                                 setSelectedParts(prev => 
                                   prev.includes(part) ? prev.filter(p => p !== part) : [...prev, part]
@@ -895,6 +896,7 @@ export default function App() {
                             backImageUrl={currentStyle.backImageUrl}
                             customPoints={currentStyle.customPoints}
                             selectedParts={[]} 
+                            dualView={true}
                             interactive={false} 
                             heatMapData={styleStats.counts}
                             heatMapDetails={styleStats.details}
