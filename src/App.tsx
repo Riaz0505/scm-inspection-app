@@ -753,8 +753,8 @@ export default function App() {
 
               {workflowStep === 'marking' && currentStyle && (
                 <motion.div key="marking" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <div className="grid grid-cols-1 gap-6 max-w-[1400px] mx-auto">
-                    <div className="w-full">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-8">
                       <Card className="border-slate-200 shadow-xl bg-white rounded-3xl overflow-hidden ring-1 ring-slate-100">
                         <CardHeader className="p-6 pb-0 border-b border-slate-50">
                           <div className="flex items-center justify-between">
@@ -777,9 +777,9 @@ export default function App() {
                               backImageUrl={currentStyle.backImageUrl}
                               customPoints={currentStyle.customPoints}
                               dualView={true}
-                              onPartClick={(partId) => {
+                              onPartClick={(part) => {
                                 setSelectedParts(prev => 
-                                  prev.includes(partId) ? prev.filter(p => p !== partId) : [...prev, partId]
+                                  prev.includes(part) ? prev.filter(p => p !== part) : [...prev, part]
                                 );
                               }}
                               selectedParts={selectedParts}
@@ -826,18 +826,14 @@ export default function App() {
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Selections ({selectedParts.length})</p>
                             {selectedParts.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
-                                {selectedParts.map(partId => {
-                                  const pt = currentStyle.customPoints?.find(p => p.id === partId);
-                                  const displayLabel = pt ? `${pt.id}: ${pt.label}` : partId;
-                                  return (
-                                    <Badge key={partId} variant="secondary" className="bg-slate-100 text-slate-600 border-none px-3 py-1 text-[9px] font-black uppercase">
-                                      {displayLabel}
-                                      <button onClick={() => setSelectedParts(p => p.filter(x => x !== partId))} className="ml-2 hover:text-red-500">
-                                        <X className="w-2.5 h-2.5" />
-                                      </button>
-                                    </Badge>
-                                  );
-                                })}
+                                {selectedParts.map(part => (
+                                  <Badge key={part} variant="secondary" className="bg-slate-100 text-slate-600 border-none px-3 py-1 text-[9px] font-black uppercase">
+                                    {part}
+                                    <button onClick={() => setSelectedParts(p => p.filter(x => x !== part))} className="ml-2 hover:text-red-500">
+                                      <X className="w-2.5 h-2.5" />
+                                    </button>
+                                  </Badge>
+                                ))}
                               </div>
                             ) : (
                               <div className="text-center py-6 border-2 border-dashed border-slate-100 rounded-2xl">
@@ -1177,10 +1173,7 @@ export default function App() {
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-2 mt-4 flex-shrink-0" />
               <div className="flex-1 min-h-0">
                 <DefectForm 
-                  parts={selectedParts.map(id => {
-                    const pt = currentStyle?.customPoints?.find(p => p.id === id);
-                    return pt ? `${pt.id}: ${pt.label}` : id;
-                  })} 
+                  parts={selectedParts} 
                   categories={categories}
                   onSubmit={handleDefectSubmit}
                   onCancel={() => setIsReporting(false)}

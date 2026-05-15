@@ -42,13 +42,6 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
 }) => {
   const [view, setView] = useState<'front' | 'back'>('front');
 
-  const defaultFront = type === 'shorts' 
-    ? "https://scmg-assets.s3.amazonaws.com/shorts_front.png" 
-    : "https://scmg-assets.s3.amazonaws.com/tshirt_front.png";
-  const defaultBack = type === 'shorts' 
-    ? "https://scmg-assets.s3.amazonaws.com/shorts_back.png" 
-    : "https://scmg-assets.s3.amazonaws.com/tshirt_back.png";
-
   // Determine images
   const frontImageToUse = frontImageUrl || layoutImage || defaultFront;
   const backImageToUse = backImageUrl || layoutImage || defaultBack;
@@ -56,6 +49,15 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
   // Decide if we should show the toggle (only if not in dual view and we have multiple sides)
   const hasMultipleSides = customPoints?.some(p => p.id.startsWith('F-')) && customPoints?.some(p => p.id.startsWith('B-'));
   const showToggle = !dualView && ((frontImageUrl && backImageUrl) || (!customPoints && !layoutImage) || hasMultipleSides);
+
+  const defaultFront = type === 'shorts' 
+    ? "https://scmg-assets.s3.amazonaws.com/shorts_front.png" 
+    : "https://scmg-assets.s3.amazonaws.com/tshirt_front.png";
+  const defaultBack = type === 'shorts' 
+    ? "https://scmg-assets.s3.amazonaws.com/shorts_back.png" 
+    : "https://scmg-assets.s3.amazonaws.com/tshirt_back.png";
+
+  const resolvedImage = currentImage || (view === 'front' ? defaultFront : defaultBack);
 
   // Find max count for normalization
   const heatMapValues = Object.values(heatMapData) as number[];
@@ -159,14 +161,12 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
 
   const getPointStatus = (pt: Point) => {
     const normalizedSelected = selectedParts.map(s => s.toLowerCase().trim());
-    const idLower = pt.id.toLowerCase().trim();
     const labelLower = pt.label.toLowerCase().trim();
+    const idLower = pt.id.toLowerCase().trim();
     
-    // Prioritize ID match for precision, fallback to label if no ID-match found in selected set
-    // but only if the user specifically clicked a label (e.g. from a legacy system)
     const isSelected = normalizedSelected.some(s => 
-      idLower === s || 
-      labelLower === s
+      labelLower === s || 
+      idLower === s
     );
     
     const hasHeat = (heatMapData[pt.label] && heatMapData[pt.label] > 0);
@@ -192,16 +192,16 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
       );
 
     return (
-      <div className={`flex-1 ${interactive ? (dualView ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[450px] sm:min-h-[550px]') : 'min-h-[350px] sm:min-h-[400px]'} bg-slate-50 rounded-2xl sm:rounded-3xl relative flex flex-col ${interactive ? 'pt-8 sm:pt-12' : 'pt-6 sm:pt-8'} border border-slate-200 shadow-xl overflow-hidden`}>
+      <div className={`flex-1 ${interactive ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[350px] sm:min-h-[400px]'} bg-slate-50 rounded-2xl sm:rounded-3xl relative flex flex-col ${interactive ? 'pt-8 sm:pt-12' : 'pt-6 sm:pt-8'} border border-slate-200 shadow-xl overflow-hidden`}>
         <div className="absolute top-4 sm:top-6 left-4 sm:left-6 flex items-center gap-2 sm:gap-3 z-10">
           <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 ${selectedParts.length > 0 && !interactive ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'} rounded-full animate-pulse`} />
           <span className="text-[8px] sm:text-[10px] font-black font-mono text-slate-500 uppercase tracking-[0.2em] truncate max-w-[120px] sm:max-w-none">
-            {interactive ? (labelOverride || side.toUpperCase()) : 'VISUAL-LOG'} // {side.toUpperCase()}
+            {interactive ? 'INST-TERM' : 'VISUAL-LOG'} // {labelOverride || side.toUpperCase()}
           </span>
         </div>
 
-        <div className={`flex-1 flex items-center justify-center ${interactive ? 'p-4 sm:p-8' : 'p-4 sm:p-6'}`}>
-          <div className={`relative w-full ${interactive ? 'max-w-[400px] sm:max-w-[500px]' : 'max-w-[300px] sm:max-w-[380px]'} aspect-square`}>
+        <div className={`flex-1 flex items-center justify-center ${interactive ? 'p-6 sm:p-12' : 'p-4 sm:p-6'}`}>
+          <div className={`relative w-full ${interactive ? 'max-w-[420px] sm:max-w-[520px]' : 'max-w-[300px] sm:max-w-[380px]'} aspect-square`}>
             <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
                  style={{ background: 'linear-gradient(90deg, #000 1px, transparent 1px) 0 0 / 20px 20px, linear-gradient(#000 1px, transparent 1px) 0 0 / 20px 20px' }} />
             
@@ -262,7 +262,7 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
                       whileTap={{ scale: 0.9 }}
                       onClick={() => {
                         if (interactive) {
-                          onPartClick?.(pt.id); // ALWAYS use ID for selection uniqueness
+                          onPartClick?.(pt.label);
                         } else if (defectCount > 0) {
                           onHeatPointClick?.(pt.label);
                         }
@@ -362,7 +362,7 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
       <div className={`flex flex-col ${dualView ? 'max-w-7xl' : 'max-w-5xl'} mx-auto w-full gap-6`}>
         <div className={`flex flex-col ${dualView ? 'lg:flex-col' : 'lg:flex-row'} gap-4 sm:gap-6 w-full ${!interactive ? 'justify-center items-center' : ''}`}>
           {/* Models Container */}
-          <div className={`flex-1 flex flex-col ${dualView ? 'md:flex-row' : ''} gap-4 sm:gap-6 relative w-full`}>
+          <div className={`flex-1 flex flex-col ${dualView ? 'md:flex-row' : ''} gap-6 relative w-full`}>
             {showToggle && (
               <div className="absolute top-4 sm:top-6 right-4 sm:right-6 flex bg-slate-100/80 backdrop-blur-md p-1 rounded-xl border border-slate-200 z-[60] shadow-sm">
                 <button 
@@ -406,7 +406,7 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
                   return (
                     <button
                       key={pt.id + pt.label}
-                      onClick={() => onPartClick?.(pt.id)}
+                      onClick={() => onPartClick?.(pt.label)}
                       className={`flex items-center justify-between p-3 rounded-2xl transition-all text-left group border-2 ${
                         isSelected 
                           ? 'bg-primary/5 border-primary/20 shadow-sm' 

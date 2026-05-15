@@ -126,20 +126,18 @@ export const LandingScanner: React.FC<LandingScannerProps> = ({ onScanResult, is
   const startScanner = useCallback(async () => {
     try {
       await stopScanner(); // Always cleanup first
-      setCameraError(null);
 
       const scanner = new Html5Qrcode("landing-qr-reader");
       scannerRef.current = scanner;
 
       const config = {
-        fps: 30, // Increased FPS for faster scanning
+        fps: 20,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
           const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const size = Math.floor(minEdge * 0.85); // Slightly larger box
+          const size = Math.floor(minEdge * 0.7);
           return { width: size, height: size };
         },
         aspectRatio: 1.0,
-        showTorchButtonIfSupported: true,
       };
 
       await scanner.start(
@@ -148,17 +146,12 @@ export const LandingScanner: React.FC<LandingScannerProps> = ({ onScanResult, is
         (decodedText) => {
           handleData(decodedText);
           stopScanner();
-          toast.success("Code Captured Successfully");
         },
         () => {}
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error("Scanner Start Error:", err);
-      if (err?.name === "NotAllowedError" || err?.message?.includes("Permission denied")) {
-        setCameraError("Camera Permission Denied. Please allow camera access in browser settings to use the scanner.");
-      } else {
-        setCameraError("Could not access camera. Ensure no other apps are using it or try refreshing.");
-      }
+      setCameraError("Could not access camera. Please check permissions.");
     }
   }, [handleData, stopScanner]);
 
