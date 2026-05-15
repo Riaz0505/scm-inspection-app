@@ -274,14 +274,37 @@ app.get("/api/stats/global", async (req, res) => {
     const styleCounts: Record<string, number> = {};
     const partCounts: Record<string, number> = {};
     const operatorCounts: Record<string, number> = {};
+    const workerPerformanceMap: Record<string, { operation: string, count: number, defects: Record<string, number> }> = {};
 
     if (Array.isArray(allDefects)) {
       allDefects.forEach((report: any) => {
         const styleKey = report.styleName || report.styleId || 'Unknown Style';
-        styleCounts[styleKey] = (styleCounts[styleKey] || 0) + (report.defects?.length || 1);
+        const defectCount = report.defects?.length || 1;
+        styleCounts[styleKey] = (styleCounts[styleKey] || 0) + defectCount;
 
-        const opKey = report.inspectorName || report.reporterEmail || 'operator@scm.com';
-        operatorCounts[opKey] = (operatorCounts[opKey] || 0) + (report.defects?.length || 1);
+        const inspectorKey = report.inspectorName || report.reporterEmail || 'Unknown Inspector';
+        operatorCounts[inspectorKey] = (operatorCounts[inspectorKey] || 0) + defectCount;
+
+        // Worker Performance Calculation
+        if (report.operatorName) {
+          const workerKey = `${report.operatorName}-${report.operation || 'N/A'}`;
+          if (!workerPerformanceMap[workerKey]) {
+            workerPerformanceMap[workerKey] = { 
+              operation: report.operation || 'N/A', 
+              count: 0, 
+              defects: {} 
+            };
+          }
+          workerPerformanceMap[workerKey].count += defectCount;
+          
+          if (report.defects && Array.isArray(report.defects)) {
+            report.defects.forEach((d: any) => {
+              if (d.subCategory) {
+                workerPerformanceMap[workerKey].defects[d.subCategory] = (workerPerformanceMap[workerKey].defects[d.subCategory] || 0) + 1;
+              }
+            });
+          }
+        }
 
         if (report.defects && Array.isArray(report.defects)) {
           report.defects.forEach((d: any) => {
@@ -298,10 +321,25 @@ app.get("/api/stats/global", async (req, res) => {
       });
     }
 
+    const workerPerformance = Object.entries(workerPerformanceMap).map(([key, data]) => {
+      const [name] = key.split('-');
+      // Find top defect category
+      const topDefect = Object.entries(data.defects)
+        .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+        
+      return {
+        name,
+        operation: data.operation,
+        count: data.count,
+        topDefect
+      };
+    }).sort((a, b) => b.count - a.count).slice(0, 15);
+
     res.json({
       styles: Object.entries(styleCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 10),
       parts: Object.entries(partCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 15),
-      operators: Object.entries(operatorCounts).map(([email, count]) => ({ email, count })).sort((a, b) => b.count - a.count).slice(0, 10)
+      operators: Object.entries(operatorCounts).map(([email, count]) => ({ email, count })).sort((a, b) => b.count - a.count).slice(0, 10),
+      workerPerformance
     });
   } catch (error) {
     console.error("Stats Error:", error);

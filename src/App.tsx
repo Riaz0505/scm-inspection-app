@@ -367,24 +367,34 @@ export default function App() {
         let dummyStyle: Style;
         if (codeToSearch.toUpperCase().includes('SHORTS')) {
           dummyStyle = {
-            id: 'dummy-shorts',
+            id: 'demo-shorts',
             barcode: codeToSearch,
-            name: 'Cargo Shorts Layout (Demo)',
+            name: 'Flex Shorts (Demo)',
             type: 'shorts',
-            layoutImage: 'https://placehold.co/600x600/ffffff/1e293b?text=Shorts+Dynamic+Layout',
+            frontImageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&q=80&w=600',
+            backImageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&q=80&w=600&rot=180',
             customPoints: [
-              { id: 'W', label: 'WAISTBAND', x: 50, y: 15 },
-              { id: 'L', label: 'LEFT LEG', x: 30, y: 70 },
-              { id: 'R', label: 'RIGHT LEG', x: 70, y: 70 },
-              { id: 'P', label: 'POCKET AREA', x: 25, y: 40 }
+              { id: 'F-W', label: 'WAISTBAND', x: 50, y: 15 },
+              { id: 'F-L', label: 'LEFT LEG', x: 30, y: 70 },
+              { id: 'F-R', label: 'RIGHT LEG', x: 70, y: 70 },
+              { id: 'B-P', label: 'BACK POCKET', x: 25, y: 40 },
+              { id: 'B-W', label: 'BACK WAIST', x: 50, y: 12 }
             ]
           };
         } else {
           dummyStyle = {
-            id: 'dummy-' + codeToSearch,
+            id: 'demo-tshirt',
             barcode: codeToSearch,
             name: 'Classic White T-Shirt (Demo)',
-            type: 'tshirt'
+            type: 'tshirt',
+            frontImageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600',
+            backImageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600&rot=180', // Flip/rot for demo
+            customPoints: [
+              { id: 'F-A', label: 'CHEST LOGO', x: 50, y: 40 },
+              { id: 'F-B', label: 'FRONT COLLAR', x: 50, y: 15 },
+              { id: 'B-C', label: 'BACK COLLAR', x: 50, y: 12 },
+              { id: 'B-D', label: 'BACK PRINT', x: 50, y: 45 }
+            ]
           };
         }
         
@@ -743,8 +753,8 @@ export default function App() {
 
               {workflowStep === 'marking' && currentStyle && (
                 <motion.div key="marking" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div className="lg:col-span-8">
+                  <div className="grid grid-cols-1 gap-6 max-w-[1400px] mx-auto">
+                    <div className="w-full">
                       <Card className="border-slate-200 shadow-xl bg-white rounded-3xl overflow-hidden ring-1 ring-slate-100">
                         <CardHeader className="p-6 pb-0 border-b border-slate-50">
                           <div className="flex items-center justify-between">
@@ -766,9 +776,10 @@ export default function App() {
                               frontImageUrl={currentStyle.frontImageUrl}
                               backImageUrl={currentStyle.backImageUrl}
                               customPoints={currentStyle.customPoints}
-                              onPartClick={(part) => {
+                              dualView={true}
+                              onPartClick={(partId) => {
                                 setSelectedParts(prev => 
-                                  prev.includes(part) ? prev.filter(p => p !== part) : [...prev, part]
+                                  prev.includes(partId) ? prev.filter(p => p !== partId) : [...prev, partId]
                                 );
                               }}
                               selectedParts={selectedParts}
@@ -815,14 +826,18 @@ export default function App() {
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Selections ({selectedParts.length})</p>
                             {selectedParts.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
-                                {selectedParts.map(part => (
-                                  <Badge key={part} variant="secondary" className="bg-slate-100 text-slate-600 border-none px-3 py-1 text-[9px] font-black uppercase">
-                                    {part}
-                                    <button onClick={() => setSelectedParts(p => p.filter(x => x !== part))} className="ml-2 hover:text-red-500">
-                                      <X className="w-2.5 h-2.5" />
-                                    </button>
-                                  </Badge>
-                                ))}
+                                {selectedParts.map(partId => {
+                                  const pt = currentStyle.customPoints?.find(p => p.id === partId);
+                                  const displayLabel = pt ? `${pt.id}: ${pt.label}` : partId;
+                                  return (
+                                    <Badge key={partId} variant="secondary" className="bg-slate-100 text-slate-600 border-none px-3 py-1 text-[9px] font-black uppercase">
+                                      {displayLabel}
+                                      <button onClick={() => setSelectedParts(p => p.filter(x => x !== partId))} className="ml-2 hover:text-red-500">
+                                        <X className="w-2.5 h-2.5" />
+                                      </button>
+                                    </Badge>
+                                  );
+                                })}
                               </div>
                             ) : (
                               <div className="text-center py-6 border-2 border-dashed border-slate-100 rounded-2xl">
@@ -884,6 +899,7 @@ export default function App() {
                             frontImageUrl={currentStyle.frontImageUrl}
                             backImageUrl={currentStyle.backImageUrl}
                             customPoints={currentStyle.customPoints}
+                            dualView={true}
                             selectedParts={[]} 
                             interactive={false} 
                             heatMapData={styleStats.counts}
@@ -1161,7 +1177,10 @@ export default function App() {
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-2 mt-4 flex-shrink-0" />
               <div className="flex-1 min-h-0">
                 <DefectForm 
-                  parts={selectedParts} 
+                  parts={selectedParts.map(id => {
+                    const pt = currentStyle?.customPoints?.find(p => p.id === id);
+                    return pt ? `${pt.id}: ${pt.label}` : id;
+                  })} 
                   categories={categories}
                   onSubmit={handleDefectSubmit}
                   onCancel={() => setIsReporting(false)}
