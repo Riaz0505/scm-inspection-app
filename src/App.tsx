@@ -776,7 +776,6 @@ export default function App() {
                               frontImageUrl={currentStyle.frontImageUrl}
                               backImageUrl={currentStyle.backImageUrl}
                               customPoints={currentStyle.customPoints}
-                              dualView={true}
                               onPartClick={(part) => {
                                 setSelectedParts(prev => 
                                   prev.includes(part) ? prev.filter(p => p !== part) : [...prev, part]
@@ -895,7 +894,6 @@ export default function App() {
                             frontImageUrl={currentStyle.frontImageUrl}
                             backImageUrl={currentStyle.backImageUrl}
                             customPoints={currentStyle.customPoints}
-                            dualView={true}
                             selectedParts={[]} 
                             interactive={false} 
                             heatMapData={styleStats.counts}
