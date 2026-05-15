@@ -53,8 +53,9 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
   const frontImageToUse = frontImageUrl || layoutImage || defaultFront;
   const backImageToUse = backImageUrl || layoutImage || defaultBack;
   
-  // Decide if we should show the toggle (only if we have back image or layout image + default behavior)
-  const showToggle = (frontImageUrl && backImageUrl) || (!customPoints && !layoutImage);
+  // Decide if we should show the toggle (only if not in dual view and we have multiple sides)
+  const hasMultipleSides = customPoints?.some(p => p.id.startsWith('F-')) && customPoints?.some(p => p.id.startsWith('B-'));
+  const showToggle = !dualView && ((frontImageUrl && backImageUrl) || (!customPoints && !layoutImage) || hasMultipleSides);
 
   // Find max count for normalization
   const heatMapValues = Object.values(heatMapData) as number[];
@@ -199,80 +200,53 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
           </span>
         </div>
 
-          {showToggle && (
-            <div className="absolute top-4 sm:top-6 right-4 sm:right-6 flex bg-slate-100/80 backdrop-blur-md p-1 rounded-xl border border-slate-200 z-[60] shadow-sm">
-              <button 
-                type="button"
-                onClick={() => setView('front')}
-                className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${view === 'front' ? 'bg-white text-primary shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+        <div className={`flex-1 flex items-center justify-center ${interactive ? 'p-4 sm:p-8' : 'p-4 sm:p-6'}`}>
+          <div className={`relative w-full ${interactive ? 'max-w-[400px] sm:max-w-[500px]' : 'max-w-[300px] sm:max-w-[380px]'} aspect-square`}>
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+                 style={{ background: 'linear-gradient(90deg, #000 1px, transparent 1px) 0 0 / 20px 20px, linear-gradient(#000 1px, transparent 1px) 0 0 / 20px 20px' }} />
+            
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={(sideImage || side) + type}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full h-full relative"
               >
-                Front
-              </button>
-              <button 
-                type="button"
-                onClick={() => setView('back')}
-                className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${view === 'back' ? 'bg-white text-primary shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                Back
-              </button>
-            </div>
-          )}
-
-          <div className={`flex-1 flex items-center justify-center ${interactive ? 'p-6 sm:p-12' : 'p-4 sm:p-6'}`}>
-            {/* Aspect Ratio Container for precise mapping */}
-            <div className={`relative w-full ${interactive ? 'max-w-[420px] sm:max-w-[520px]' : 'max-w-[300px] sm:max-w-[380px]'} aspect-square`}>
-              {/* Technical Grid Background */}
-              <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
-                   style={{ background: 'linear-gradient(90deg, #000 1px, transparent 1px) 0 0 / 20px 20px, linear-gradient(#000 1px, transparent 1px) 0 0 / 20px 20px' }} />
-              
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={(currentImage || view) + type}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.05 }}
-                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  className="w-full h-full relative"
-                >
-                  {currentImage || type === 'shorts' ? (
-                    <div className="w-full h-full flex items-center justify-center p-4">
-                      <img 
-                        key={currentImage || view}
-                        src={getApiUrl(currentImage || (view === 'front' ? "https://scmg-assets.s3.amazonaws.com/shorts_front.png" : "https://scmg-assets.s3.amazonaws.com/shorts_back.png"))} 
-                        alt="Garment Layout" 
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)]" 
-                      />
-                    </div>
-                  ) : (
-                    /* T-Shirt SVG Diagram */
-                    <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)]">
-                      {/* T-shirt Outline */}
-                      <path
-                        d={view === 'front' 
-                          ? "M40,40 L60,40 L70,35 Q100,55 130,35 L140,40 L160,40 L190,80 L165,100 L155,90 L155,180 Q100,185 45,180 L45,90 L35,100 L10,80 Z"
-                          : "M40,40 L60,40 L70,35 Q100,45 130,35 L140,40 L160,40 L190,80 L165,100 L155,90 L155,180 Q100,185 45,180 L45,90 L35,100 L10,80 Z"
-                        }
-                        fill="white"
-                        stroke="#1e293b"
-                        strokeWidth="2.5"
-                      />
-                      
-                      {/* Technical Crosshairs & Guide lines */}
-                      <g className="opacity-10 text-slate-900 font-mono">
-                        <line x1="100" y1="0" x2="100" y2="200" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
-                        <line x1="0" y1="90" x2="200" y2="90" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
-                      </g>
-
-                      {/* Measurement Lines (Visual only) */}
-                      <g className="opacity-40">
-                        <line x1="45" y1="90" x2="155" y2="90" stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" />
-                        <line x1="100" y1="35" x2="100" y2="180" stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" />
-                        {view === 'front' && <path d="M70,35 Q100,65 130,35" fill="none" stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" />}
-                        {view === 'back' && <path d="M70,35 Q100,45 130,35" fill="none" stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" />}
-                      </g>
-                    </svg>
-                  )}
+                {sideImage || type === 'shorts' ? (
+                  <div className="w-full h-full flex items-center justify-center p-4">
+                    <img 
+                      key={resolvedSideImage}
+                      src={getApiUrl(resolvedSideImage)} 
+                      alt={`${side} view`} 
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)] transition-all duration-500" 
+                    />
+                  </div>
+                ) : (
+                  <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)]">
+                    <path
+                      d={side === 'front' 
+                        ? "M40,40 L60,40 L70,35 Q100,55 130,35 L140,40 L160,40 L190,80 L165,100 L155,90 L155,180 Q100,185 45,180 L45,90 L35,100 L10,80 Z"
+                        : "M40,40 L60,40 L70,35 Q100,45 130,35 L140,40 L160,40 L190,80 L165,100 L155,90 L155,180 Q100,185 45,180 L45,90 L35,100 L10,80 Z"
+                      }
+                      fill="white"
+                      stroke="#1e293b"
+                      strokeWidth="2.5"
+                    />
+                    <g className="opacity-10 text-slate-900 font-mono">
+                      <line x1="100" y1="0" x2="100" y2="200" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
+                      <line x1="0" y1="90" x2="200" y2="90" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
+                    </g>
+                    <g className="opacity-40">
+                      <line x1="45" y1="90" x2="155" y2="90" stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" />
+                      <line x1="100" y1="35" x2="100" y2="180" stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" />
+                      {side === 'front' && <path d="M70,35 Q100,65 130,35" fill="none" stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" />}
+                      {side === 'back' && <path d="M70,35 Q100,45 130,35" fill="none" stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" />}
+                    </g>
+                  </svg>
+                )}
 
                 {sidePoints.map((pt) => {
                   const heatColor = getHeatColor(pt.label);
