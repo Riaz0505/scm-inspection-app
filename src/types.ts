@@ -1,15 +1,32 @@
 export type GarmentType = 'tshirt' | 'shorts' | 'combo';
 
+export interface GarmentPoint {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+}
+
+export interface GarmentCategory {
+  id: string;
+  name: string;
+  type: GarmentType;
+  points: GarmentPoint[];
+  frontImageUrl?: string;
+  backImageUrl?: string;
+}
+
 export interface Style {
   id: string;
   barcode: string;
   name: string;
   type: GarmentType;
+  categoryId?: string; // Reference to GarmentCategory
   imageUrl?: string;
   frontImageUrl?: string;
   backImageUrl?: string;
   layoutImage?: string;
-  customPoints?: { id: string; label: string; x: number; y: number }[];
+  customPoints?: GarmentPoint[];
 }
 
 export interface SelectedDefect {

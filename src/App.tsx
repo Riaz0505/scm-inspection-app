@@ -66,6 +66,7 @@ export default function App() {
   });
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [categories, setCategories] = useState<DefectCategory[]>(DEFECT_CATEGORIES);
+  const [garmentCategories, setGarmentCategories] = useState<GarmentCategory[]>([]);
   const [styleStats, setStyleStats] = useState<StyleStats>({ counts: {}, details: {}, totalReports: 0, totalDefects: 0 });
   const [inspectedPart, setInspectedPart] = useState<string | null>(null);
   const [inspectorName, setInspectorName] = useState<string>(() => {
@@ -134,6 +135,7 @@ export default function App() {
     });
 
     fetchCategories();
+    fetchGarmentCategories();
     return () => unsubscribe();
   }, []);
 
@@ -194,6 +196,17 @@ export default function App() {
     // 3. Fallback to hardcoded constants
     setCategories(DEFECT_CATEGORIES);
     console.log('[App] Categories loaded via constants (fallback)');
+  };
+
+  const fetchGarmentCategories = async () => {
+    try {
+      const data = await fetchApi('/api/garment-categories');
+      if (data && Array.isArray(data)) {
+        setGarmentCategories(data);
+      }
+    } catch (error) {
+      console.error('[App] Failed to fetch garment categories');
+    }
   };
 
   // Login State
@@ -607,7 +620,11 @@ export default function App() {
         {view === 'admin' ? (
           <AdminDashboard 
             categories={categories} 
-            onRefreshCategories={fetchCategories} 
+            garmentCategories={garmentCategories}
+            onRefreshCategories={() => {
+              fetchCategories();
+              fetchGarmentCategories();
+            }} 
             onBackToHome={handleReturnHome}
           />
         ) : (

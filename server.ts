@@ -61,6 +61,7 @@ const StyleSchema = new mongoose.Schema({
   barcode: String,
   name: String,
   type: String,
+  categoryId: String,
   imageUrl: String,
   frontImageUrl: String,
   backImageUrl: String,
@@ -73,6 +74,21 @@ const StyleSchema = new mongoose.Schema({
   }]
 });
 const StyleModel = mongoose.model("Style", StyleSchema, "styles");
+
+const GarmentCategorySchema = new mongoose.Schema({
+  id: String,
+  name: String,
+  type: String,
+  frontImageUrl: String,
+  backImageUrl: String,
+  points: [{
+    id: String,
+    label: String,
+    x: Number,
+    y: Number
+  }]
+});
+const GarmentCategoryModel = mongoose.model("GarmentCategory", GarmentCategorySchema, "garment_categories");
 
 const DefectSchema = new mongoose.Schema({
   reportId: String,
@@ -423,6 +439,38 @@ app.get("/api/debug-uploads", (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message, path: uploadsDir });
+  }
+});
+
+// Garment Categories (Templates)
+app.get("/api/garment-categories", async (req, res) => {
+  try {
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+      const categories = await GarmentCategoryModel.find();
+      res.json(categories);
+    } else {
+      res.json([]);
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch garment categories" });
+  }
+});
+
+app.post("/api/garment-categories", async (req, res) => {
+  try {
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+      const data = req.body;
+      const updated = await GarmentCategoryModel.findOneAndUpdate(
+        { id: data.id || Date.now().toString() },
+        { $set: data },
+        { upsert: true, new: true }
+      );
+      res.json(updated);
+    } else {
+      res.status(500).json({ message: "MongoDB required for this feature" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Failed to save garment category" });
   }
 });
 
