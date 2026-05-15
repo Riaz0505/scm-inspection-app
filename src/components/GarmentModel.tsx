@@ -121,8 +121,10 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
     { id: 'B-S', label: 'BACK SIDE SEAM', x: 15, y: 50 },
   ];
 
-  const getHeatColor = (label: string) => {
-    const count = heatMapData[label] || 0;
+  const getHeatColor = (pt: Point) => {
+    const idCount = heatMapData[pt.id] || 0;
+    const labelCount = heatMapData[pt.label] || 0;
+    const count = idCount + labelCount;
     if (count === 0) return null;
     
     // Gradient: Light Yellow -> Orange -> Red
@@ -137,8 +139,10 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
     return '#7f1d1d'; // Red 900
   };
 
-  const getHeatTextColor = (label: string) => {
-    const count = heatMapData[label] || 0;
+  const getHeatTextColor = (pt: Point) => {
+    const idCount = heatMapData[pt.id] || 0;
+    const labelCount = heatMapData[pt.label] || 0;
+    const count = idCount + labelCount;
     if (count >= 5) return 'white';
     return '#1e293b'; // Slate 900 for lighter heat colors
   };
@@ -168,7 +172,9 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
       labelLower === s
     );
     
-    const hasHeat = (heatMapData[pt.label] && heatMapData[pt.label] > 0);
+    const idCount = heatMapData[pt.id] || 0;
+    const labelCount = heatMapData[pt.label] || 0;
+    const hasHeat = (idCount > 0 || labelCount > 0);
     
     return { isSelected, hasHeat };
   };
@@ -248,10 +254,20 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
                 )}
 
                 {sidePoints.map((pt) => {
-                  const heatColor = getHeatColor(pt.label);
+                  const heatColor = getHeatColor(pt);
                   const { isSelected, hasHeat } = getPointStatus(pt);
-                  const defectCount = heatMapData[pt.label] || 0;
+                  const idCount = (heatMapData[pt.id] || 0) as number;
+                  const labelCount = (heatMapData[pt.label] || 0) as number;
+                  const defectCount = idCount + labelCount;
                   const isProminent = isSelected || hasHeat || interactive;
+                  
+                  // Merge details from both ID and Label for full history
+                  const idDetails = heatMapDetails[pt.id] || {};
+                  const labelDetails = heatMapDetails[pt.label] || {};
+                  const mergedDetails: Record<string, number> = { ...labelDetails };
+                  Object.entries(idDetails).forEach(([cat, count]) => {
+                    mergedDetails[cat] = (mergedDetails[cat] || 0) + (count as number);
+                  });
 
                   return (
                     <motion.button
@@ -276,7 +292,7 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
                         top: `${pt.y}%`, 
                         cursor: interactive || (!interactive && defectCount > 0) ? 'pointer' : 'default',
                         backgroundColor: isSelected ? undefined : (heatColor || undefined),
-                        color: isSelected ? undefined : getHeatTextColor(pt.label),
+                        color: isSelected ? undefined : getHeatTextColor(pt),
                         zIndex: isSelected || hasHeat ? 60 : 10
                       }}
                     >
@@ -291,9 +307,9 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
                                 <span>{defectCount} Defects</span>
                                 <span>{Math.round((defectCount / (totalDefectsCount || 1)) * 100)}%</span>
                               </div>
-                              {heatMapDetails[pt.label] && (
+                              {Object.keys(mergedDetails).length > 0 && (
                                 <div className="flex flex-col gap-0.5 pt-1 border-t border-white/10">
-                                  {Object.entries(heatMapDetails[pt.label])
+                                  {Object.entries(mergedDetails)
                                     .sort(([, aCount], [, bCount]) => (bCount as number) - (aCount as number))
                                     .map(([sub, count]) => {
                                       const subCount = count as number;
@@ -399,7 +415,9 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
             
               <div className={`flex-1 grid ${dualView ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 lg:grid-cols-1'} gap-2 overflow-y-auto pr-1 custom-scrollbar pb-2 lg:pb-4`}>
                 {legendPoints.sort((a, b) => a.id.localeCompare(b.id)).map((pt) => {
-                  const count = heatMapData[pt.label] || 0;
+                  const idCount = heatMapData[pt.id] || 0;
+                  const labelCount = heatMapData[pt.label] || 0;
+                  const count = idCount + labelCount;
                   const { isSelected } = getPointStatus(pt);
                   
                   return (

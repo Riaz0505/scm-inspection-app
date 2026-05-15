@@ -352,10 +352,16 @@ app.get("/api/stats/style/:barcode", async (req, res) => {
   try {
     let styleDefects = [];
     if (MONGODB_URI) {
-      styleDefects = await DefectModel.find({ styleId: barcode });
+      // Use case-insensitive search for consistency
+      styleDefects = await DefectModel.find({ 
+        styleId: { $regex: new RegExp(`^${barcode.trim()}$`, "i") } 
+      });
     } else {
       const defects = JSON.parse(fs.readFileSync(DEFECTS_FILE, "utf-8"));
-      styleDefects = defects.filter((d: any) => d.styleId === barcode);
+      const cleanBarcode = barcode.trim().toLowerCase();
+      styleDefects = defects.filter((d: any) => 
+        (d.styleId || "").toString().trim().toLowerCase() === cleanBarcode
+      );
     }
 
     const counts: Record<string, number> = {};

@@ -147,7 +147,8 @@ export default function App() {
 
   const fetchStyleStats = async (barcode: string) => {
     try {
-      const data = await fetchApi(`/api/stats/style/${barcode}`);
+      // Add timestamp to prevent caching issues
+      const data = await fetchApi(`/api/stats/style/${barcode}?t=${Date.now()}`);
       setStyleStats(data || { counts: {}, details: {}, totalReports: 0, totalDefects: 0 });
     } catch (error) {
       console.warn('Style stats fetch failed, will retry later:', error);
@@ -439,26 +440,39 @@ export default function App() {
         notes
       };
 
-      // Submit to Firebase
+      // Submit to Firebase (Primary source of truth for the session)
       const firebaseId = await firebaseService.saveReport(report as any);
       
-      // Also submit to API for background log/MongoDB sync
-      try {
-        await fetchApi('/api/defects', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...report, reportId: firebaseId })
+      // Optimistic Update for Heat Map (Instant feedback)
+      setStyleStats(prev => {
+        const next = JSON.parse(JSON.stringify(prev)) as StyleStats;
+        selectedDefects.forEach(d => {
+          next.counts[d.part] = (next.counts[d.part] || 0) + 1;
+          if (!next.details[d.part]) next.details[d.part] = {};
+          next.details[d.part][d.subCategory] = (next.details[d.part][d.subCategory] || 0) + 1;
         });
-      } catch (err) {
-        console.warn('API sync failed, but Firebase persisted');
-      }
+        next.totalReports += 1;
+        next.totalDefects += selectedDefects.length;
+        return next;
+      });
+
+      // Submit to API for background log/MongoDB sync (Non-blocking for UI speed)
+      fetchApi('/api/defects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...report, reportId: firebaseId })
+      }).catch(err => {
+        console.warn('Background API sync failed, but Firebase persisted:', err);
+      });
 
       toast.success(`Inspection completed: ${selectedDefects.length} faults logged`);
       setIsReporting(false);
       setSelectedParts([]);
       setWorkflowStep('summary'); // Move to summary/report page after logging
+      
+      // Refresh style stats from backend (refresh with actual db values after a longer delay)
       if (currentStyle?.barcode) {
-        fetchStyleStats(currentStyle.barcode);
+        setTimeout(() => fetchStyleStats(currentStyle.barcode), 2000);
       }
     } catch (error) {
       toast.error('Failed to report defects');
