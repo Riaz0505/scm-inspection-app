@@ -358,8 +358,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   });
   const [styles, setStyles] = useState<Style[]>([]);
   const [models, setModels] = useState<IGarmentModel[]>([]);
-  const [newStyle, setNewStyle] = useState<Partial<Style>>({ type: 'tshirt' });
-  const [newModel, setNewModel] = useState<Partial<IGarmentModel>>({ type: 'tshirt', customPoints: [] });
+  const [newStyle, setNewStyle] = useState<Partial<Style>>({ type: '' });
+  const [newModel, setNewModel] = useState<Partial<IGarmentModel>>({ type: '', customPoints: [] });
   const [uploading, setUploading] = useState(false);
   const [dbStatus, setDbStatus] = useState<{mongo: string, mode: string} | null>(null);
 
@@ -438,7 +438,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         body: JSON.stringify(newModel)
       });
       toast.success('Garment Model saved');
-      setNewModel({ type: 'tshirt', customPoints: [] });
+      setNewModel({ type: '', customPoints: [] });
       fetchModels();
     } catch (e) {
       toast.error('Failed to save model');
@@ -464,7 +464,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         body: JSON.stringify(styleData)
       });
       toast.success('Style configuration saved');
-      setNewStyle({ type: 'tshirt' });
+      setNewStyle({ type: '' });
       fetchStyles();
     } catch (e) {
       toast.error('Failed to save style');
@@ -1156,22 +1156,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <Input 
                       placeholder="e.g. Round Neck T-Shirt" 
                       value={newModel.name || ''}
-                      onChange={e => setNewModel(p => ({ ...p, name: e.target.value }))}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setNewModel(p => ({ 
+                          ...p, 
+                          name: val,
+                          // Auto-fill type if it was empty or matched the old name
+                          type: (!p.type || p.type === p.name) ? val : p.type
+                        }));
+                      }}
                       className="h-10 border-slate-200 focus:border-primary rounded-xl"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Garment Type</label>
-                    <select 
-                      value={newModel.type}
-                      onChange={e => setNewModel(p => ({ ...p, type: e.target.value as any }))}
-                      className="w-full h-10 border-slate-200 border rounded-xl px-3 text-[12px] font-bold uppercase outline-none focus:border-primary"
-                    >
-                      <option value="tshirt">T-Shirt</option>
-                      <option value="shorts">Shorts</option>
-                      <option value="combo">Combo Pack</option>
-                    </select>
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Garment Type / Category</label>
+                    <div className="relative group">
+                      <Input 
+                        list="garment-types"
+                        placeholder="e.g. Round Neck T-Shirt" 
+                        value={newModel.type || ''}
+                        onChange={e => setNewModel(p => ({ ...p, type: e.target.value }))}
+                        className="h-10 border-slate-200 focus:border-primary rounded-xl"
+                      />
+                      <datalist id="garment-types">
+                        <option value="Round Neck T-Shirt" />
+                        <option value="V-Neck T-Shirt" />
+                        <option value="Polo Shirt" />
+                        <option value="Hoodie" />
+                        <option value="Sweatshirt" />
+                        <option value="Track Pant" />
+                        <option value="Leggings" />
+                        <option value="Shorts" />
+                        <option value="Combo Pack" />
+                        <option value="Jeans" />
+                        <option value="Jacket" />
+                      </datalist>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1422,15 +1443,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Garment Type Base</label>
-                    <select 
+                    <Input 
+                      list="garment-types"
+                      placeholder="e.g. Round Neck T-Shirt" 
                       value={newStyle.type}
-                      onChange={e => setNewStyle(p => ({ ...p, type: e.target.value as any }))}
-                      className="w-full h-10 border-slate-200 border rounded-xl px-3 text-[12px] font-bold uppercase outline-none focus:border-primary"
-                    >
-                      <option value="tshirt">T-Shirt</option>
-                      <option value="shorts">Shorts</option>
-                      <option value="combo">Combo Pack</option>
-                    </select>
+                      onChange={e => setNewStyle(p => ({ ...p, type: e.target.value }))}
+                      className="h-10 border-slate-200 focus:border-primary rounded-xl"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

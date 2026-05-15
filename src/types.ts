@@ -1,4 +1,4 @@
-export type GarmentType = 'tshirt' | 'shorts' | 'combo';
+export type GarmentType = string; // More flexible to allow adding more types
 
 export interface Style {
   id: string;

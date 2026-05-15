@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { getApiUrl } from '../lib/api';
 
 interface GarmentModelProps {
-  type: 'tshirt' | 'shorts' | 'combo';
+  type: string;
   onPartClick?: (part: string) => void;
   onHeatPointClick?: (part: string) => void;
   selectedParts: string[];
@@ -43,10 +43,10 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
   const [view, setView] = useState<'front' | 'back'>('front');
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  const defaultFront = type === 'shorts' 
+  const defaultFront = type.toLowerCase().includes('short')
     ? "https://scmg-assets.s3.amazonaws.com/shorts_front.png" 
     : "https://scmg-assets.s3.amazonaws.com/tshirt_front.png";
-  const defaultBack = type === 'shorts' 
+  const defaultBack = type.toLowerCase().includes('short')
     ? "https://scmg-assets.s3.amazonaws.com/shorts_back.png" 
     : "https://scmg-assets.s3.amazonaws.com/tshirt_back.png";
 
@@ -404,8 +404,9 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
     );
   };
 
-  if (type === 'tshirt' || type === 'shorts' || layoutImage) {
-    const legendPoints = customPoints || (type === 'shorts' ? [...shortsFrontPoints, ...shortsBackPoints] : [...frontPoints, ...backPoints]);
+  if (type || layoutImage) {
+    const isShorts = type.toLowerCase().includes('short');
+    const legendPoints = customPoints || (isShorts ? [...shortsFrontPoints, ...shortsBackPoints] : [...frontPoints, ...backPoints]);
 
     return (
       <div className={`flex flex-col ${dualView ? 'max-w-7xl' : 'max-w-5xl'} mx-auto w-full gap-6`}>
