@@ -149,7 +149,50 @@ export default function App() {
     try {
       // Add timestamp to prevent caching issues
       const data = await fetchApi(`/api/stats/style/${barcode}?t=${Date.now()}`);
-      setStyleStats(data || { counts: {}, details: {}, totalReports: 0, totalDefects: 0 });
+      if (!data) {
+        setStyleStats({ counts: {}, details: {}, totalReports: 0, totalDefects: 0 });
+        return;
+      }
+
+      // Normalization: Combine ID and Label entries if they exist separately
+      // This ensures that "F-D" and "FRONT ARMHOLE" are counted together
+      const normalizedCounts: Record<string, number> = {};
+      const normalizedDetails: Record<string, Record<string, number>> = {};
+      
+      // Step 1: Initialize normalization map from current style (accurate source of truth)
+      const partMap: Record<string, string> = {}; // label -> id
+      if (currentStyle?.customPoints) {
+        currentStyle.customPoints.forEach(p => {
+          partMap[p.label.toUpperCase()] = p.id;
+        });
+      }
+
+      // Step 2: Merge counts
+      Object.entries(data.counts || {}).forEach(([key, count]) => {
+        const uppercaseKey = key.toUpperCase();
+        const targetId = partMap[uppercaseKey] || key;
+        normalizedCounts[targetId] = (normalizedCounts[targetId] || 0) + (count as number);
+      });
+
+      // Step 3: Merge details
+      Object.entries(data.details || {}).forEach(([key, defectDetails]) => {
+        const uppercaseKey = key.toUpperCase();
+        const targetId = partMap[uppercaseKey] || key;
+        if (!normalizedDetails[targetId]) normalizedDetails[targetId] = {};
+        
+        Object.entries(defectDetails as Record<string, number>).forEach(([subCat, count]) => {
+          normalizedDetails[targetId][subCat] = (normalizedDetails[targetId][subCat] || 0) + count;
+        });
+      });
+
+      const totalDefectsFromCounts = Object.values(normalizedCounts).reduce((a, b) => a + b, 0);
+
+      setStyleStats({
+        ...data,
+        counts: normalizedCounts,
+        details: normalizedDetails,
+        totalDefects: totalDefectsFromCounts // Use the sum of visible counts for UI consistency
+      });
     } catch (error) {
       console.warn('Style stats fetch failed, will retry later:', error);
     }
@@ -894,10 +937,18 @@ export default function App() {
                               <CardTitle className="text-3xl font-black text-slate-900 tracking-tight">Pattern Heat Map</CardTitle>
                               <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aggregate results for this Style</CardDescription>
                             </div>
-                            <div className="text-right">
-                              <div className="text-[8px] font-black text-rose-400 uppercase tracking-[0.2em] mb-1">Total Reports</div>
-                              <div className="text-5xl font-black text-rose-500 tabular-nums leading-none tracking-tighter">
-                                {styleStats.totalReports}
+                            <div className="flex gap-4 sm:gap-10">
+                              <div className="text-right">
+                                <div className="text-[9px] font-black text-rose-500 uppercase tracking-[0.2em] mb-1">Total Defects</div>
+                                <div className="text-5xl font-black text-rose-600 tabular-nums leading-none tracking-tighter drop-shadow-sm">
+                                  {styleStats.totalDefects}
+                                </div>
+                              </div>
+                              <div className="text-right border-l border-rose-200 pl-4 sm:pl-10">
+                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Reports</div>
+                                <div className="text-5xl font-black text-slate-300 tabular-nums leading-none tracking-tighter">
+                                  {styleStats.totalReports}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -939,42 +990,87 @@ export default function App() {
                     <div className="lg:col-span-4 space-y-6">
                       <AnimatePresence mode="wait">
                         {inspectedPart ? (
-                          <motion.div key="part-details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                            <Card className="border-primary/20 shadow-xl bg-white rounded-3xl overflow-hidden ring-4 ring-primary/5">
-                              <CardHeader className="p-6 bg-primary/5 border-b border-primary/10 flex flex-row items-center justify-between">
+                          <motion.div key="part-details" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
+                            <Card className="border-rose-100 shadow-2xl bg-white rounded-[2rem] overflow-hidden ring-8 ring-rose-50/20">
+                              <CardHeader className="p-6 bg-rose-500 border-b border-rose-600 flex flex-row items-center justify-between">
                                 <div>
-                                  <CardTitle className="text-sm font-black uppercase tracking-widest text-primary">{inspectedPart}</CardTitle>
-                                  <CardDescription className="text-[10px] font-bold text-slate-400">Localized Fault Breakdown</CardDescription>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge className="bg-white/20 text-white border-white/20 uppercase text-[8px] font-black">Localized Analysis</Badge>
+                                    <span className="text-[9px] font-black text-white/60 tracking-widest">{inspectedPart}</span>
+                                  </div>
+                                  <CardTitle className="text-xl font-black uppercase text-white tracking-tight">
+                                    {currentStyle?.customPoints?.find(p => p.id === inspectedPart)?.label || inspectedPart}
+                                  </CardTitle>
                                 </div>
-                                <button onClick={() => setInspectedPart(null)} className="p-2 hover:bg-white rounded-xl transition-colors">
-                                  <X className="w-4 h-4 text-slate-400" />
+                                <button onClick={() => setInspectedPart(null)} className="w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all">
+                                  <X className="w-5 h-5" />
                                 </button>
                               </CardHeader>
-                              <CardContent className="p-6 space-y-4">
-                                {Object.entries(styleStats.details[inspectedPart] || {}).length > 0 ? (
-                                  Object.entries(styleStats.details[inspectedPart]).map(([cat, count]) => {
-                                    const numCount = count as number;
-                                    const totalCount = (styleStats.counts[inspectedPart] || 1) as number;
-                                    return (
-                                      <div key={cat} className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                          <span className="text-[10px] font-black uppercase text-slate-600 truncate mr-2">{cat}</span>
-                                          <Badge variant="outline" className="text-xs font-black border-slate-200">{numCount}</Badge>
-                                        </div>
-                                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                          <motion.div 
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${(numCount / totalCount) * 100}%` }}
-                                            className="h-full bg-primary"
-                                          />
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                ) : (
-                                  <div className="text-center py-10 opacity-30 italic">No detailed records</div>
-                                )}
+                              <CardContent className="p-8 space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Faults</p>
+                                    <p className="text-2xl font-black text-slate-900">{styleStats.counts[inspectedPart] || 0}</p>
+                                  </div>
+                                  <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                                    <p className="text-[8px] font-black text-rose-400 uppercase tracking-widest mb-1">Impact Level</p>
+                                    <p className="text-2xl font-black text-rose-600">{Math.round(((styleStats.counts[inspectedPart] || 0) / (styleStats.totalDefects || 1)) * 100)}%</p>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                  <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                    Defect Breakdown
+                                    <span className="h-0.5 flex-1 bg-slate-100" />
+                                  </p>
+                                  {Object.entries(styleStats.details[inspectedPart] || {}).length > 0 ? (
+                                    Object.entries(styleStats.details[inspectedPart])
+                                      .sort(([, a], [, b]) => (b as number) - (a as number))
+                                      .map(([cat, count]) => {
+                                        const numCount = count as number;
+                                        const totalCount = (styleStats.counts[inspectedPart] || 1) as number;
+                                        const percentage = Math.round((numCount / totalCount) * 100);
+                                        
+                                        return (
+                                          <div key={cat} className="space-y-2 group">
+                                            <div className="flex justify-between items-center">
+                                              <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full ${percentage > 50 ? 'bg-rose-500' : 'bg-orange-400'}`} />
+                                                <span className="text-[10px] font-black uppercase text-slate-700">{cat}</span>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black text-slate-900">{numCount}</span>
+                                                <span className="text-[10px] font-bold text-slate-400">{percentage}%</span>
+                                              </div>
+                                            </div>
+                                            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                                              <motion.div 
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${percentage}%` }}
+                                                transition={{ duration: 1, ease: "easeOut" }}
+                                                className={`h-full rounded-full ${percentage > 50 ? 'bg-rose-500' : 'bg-orange-400'} shadow-sm shadow-rose-200`}
+                                              />
+                                            </div>
+                                          </div>
+                                        );
+                                      })
+                                  ) : (
+                                    <div className="text-center py-10 rounded-2xl border-2 border-dashed border-slate-100 italic text-slate-300 text-sm">
+                                      No detailed records found
+                                    </div>
+                                  )}
+                                </div>
                               </CardContent>
+                              <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-center">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => setInspectedPart(null)}
+                                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all"
+                                >
+                                  Close Details
+                                </Button>
+                              </div>
                             </Card>
                           </motion.div>
                         ) : (
@@ -988,9 +1084,11 @@ export default function App() {
                                 <div className="divide-y divide-slate-50">
                                   {Object.entries(styleStats.counts)
                                     .sort((a, b) => (b[1] as number) - (a[1] as number))
-                                    .slice(0, 8)
+                                    .slice(0, 10)
                                     .map(([part, count], idx) => {
                                       const numCount = count as number;
+                                      const pointLabel = currentStyle?.customPoints?.find(p => p.id === part)?.label || part;
+                                      
                                       return (
                                         <button 
                                           key={part} 
@@ -1000,11 +1098,11 @@ export default function App() {
                                           <div className="flex items-center gap-4">
                                             <div className="text-xs font-black text-slate-300 font-mono">0{idx + 1}</div>
                                             <div>
-                                              <p className="text-[11px] font-black uppercase text-slate-900 leading-tight">{part}</p>
-                                              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Click for trends</p>
+                                              <p className="text-[11px] font-black uppercase text-slate-900 leading-tight">{pointLabel}</p>
+                                              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{part} • CLICK FOR TRENDS</p>
                                             </div>
                                           </div>
-                                          <Badge className={`border-none text-[10px] font-black ${numCount > 10 ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600'}`}>{numCount}</Badge>
+                                          <Badge className={`border-none text-[10px] font-black ${numCount > 10 ? 'bg-rose-500 text-white shadow-lg shadow-rose-200' : 'bg-slate-100 text-slate-600'}`}>{numCount}</Badge>
                                         </button>
                                       );
                                     })}

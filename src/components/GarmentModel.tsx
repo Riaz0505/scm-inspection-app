@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getApiUrl } from '../lib/api';
 
@@ -41,6 +41,7 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
   dualView = false
 }) => {
   const [view, setView] = useState<'front' | 'back'>('front');
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   const defaultFront = type === 'shorts' 
     ? "https://scmg-assets.s3.amazonaws.com/shorts_front.png" 
@@ -197,7 +198,10 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
       );
 
     return (
-      <div className={`flex-1 ${interactive ? (dualView ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[450px] sm:min-h-[550px]') : 'min-h-[350px] sm:min-h-[400px]'} bg-slate-50 rounded-2xl sm:rounded-3xl relative flex flex-col ${interactive ? 'pt-8 sm:pt-12' : 'pt-6 sm:pt-8'} border border-slate-200 shadow-xl overflow-hidden`}>
+      <div 
+        className={`flex-1 ${interactive ? (dualView ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[450px] sm:min-h-[550px]') : 'min-h-[350px] sm:min-h-[400px]'} bg-slate-50 rounded-2xl sm:rounded-3xl relative flex flex-col ${interactive ? 'pt-8 sm:pt-12' : 'pt-6 sm:pt-8'} border border-slate-200 shadow-xl overflow-hidden`}
+        onClick={() => !interactive && setActiveTooltip(null)}
+      >
         <div className="absolute top-4 sm:top-6 left-4 sm:left-6 flex items-center gap-2 sm:gap-3 z-10">
           <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 ${selectedParts.length > 0 && !interactive ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'} rounded-full animate-pulse`} />
           <span className="text-[8px] sm:text-[10px] font-black font-mono text-slate-500 uppercase tracking-[0.2em] truncate max-w-[120px] sm:max-w-none">
@@ -269,64 +273,94 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
                     mergedDetails[cat] = (mergedDetails[cat] || 0) + (count as number);
                   });
 
+                  const isTooltipActive = activeTooltip === pt.id;
+                  const showTooltipBelow = pt.y < 40; // If point is high up, show tooltip below it
+
                   return (
                     <motion.button
                       key={pt.id + pt.label}
                       type="button"
-                      whileHover={{ scale: 1.25, zIndex: 100 }}
+                      whileHover={{ scale: 1.25, zIndex: 110 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (interactive) {
                           onPartClick?.(pt.id);
                         } else if (defectCount > 0) {
-                          onHeatPointClick?.(pt.label);
-                        }
-                      }}
-                      className={`group absolute -translate-x-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 shadow-lg ${
-                        isSelected 
-                          ? 'bg-primary border-primary text-white scale-110 ring-4 ring-primary/20' 
-                          : (heatColor ? 'border-rose-300' : 'bg-white/90 border-slate-300 text-slate-500 shadow-md')
-                      } ${!isProminent ? 'opacity-40 scale-90' : 'opacity-100'}`}
-                      style={{ 
-                        left: `${pt.x}%`, 
-                        top: `${pt.y}%`, 
-                        cursor: interactive || (!interactive && defectCount > 0) ? 'pointer' : 'default',
-                        backgroundColor: isSelected ? undefined : (heatColor || undefined),
-                        color: isSelected ? undefined : getHeatTextColor(pt),
-                        zIndex: isSelected || hasHeat ? 60 : 10
-                      }}
-                    >
-                      <span className={`${isSelected ? 'text-[12px]' : 'text-[11px]'} font-black font-mono tracking-tighter`}>{pt.id}</span>
-                      
-                      {(interactive || defectCount > 0) && (
-                        <div className="absolute bottom-full mb-3 hidden group-hover:flex flex-col items-center bg-slate-900/95 text-white text-[9px] font-black font-mono px-3 py-1.5 rounded-xl backdrop-blur-sm min-w-[140px] max-w-[220px] z-[101] shadow-xl uppercase tracking-widest border border-slate-700 animate-in fade-in zoom-in-95 duration-200">
-                          <span className="border-b border-white/20 pb-1 mb-1 w-full text-center">{pt.label}</span>
-                          {defectCount > 0 && (
-                            <div className="w-full space-y-1">
-                              <div className="flex justify-between items-center text-rose-400 font-bold mb-1">
-                                <span>{defectCount} Defects</span>
-                                <span>{Math.round((defectCount / (totalDefectsCount || 1)) * 100)}%</span>
-                              </div>
-                              {Object.keys(mergedDetails).length > 0 && (
-                                <div className="flex flex-col gap-0.5 pt-1 border-t border-white/10">
-                                  {Object.entries(mergedDetails)
-                                    .sort(([, aCount], [, bCount]) => (bCount as number) - (aCount as number))
-                                    .map(([sub, count]) => {
-                                      const subCount = count as number;
-                                      return (
-                                        <div key={sub} className="flex justify-between items-center gap-2">
-                                          <span className="text-[7px] text-slate-400 truncate max-w-[80px]">{sub}</span>
-                                          <div className="flex items-center gap-1.5">
-                                             <span className="text-white text-[8px] font-bold">{Math.round((subCount / defectCount) * 100)}%</span>
-                                             <span className="text-slate-500 shrink-0">({subCount})</span>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                          if (activeTooltip === pt.id) {
+                            setActiveTooltip(null);
+                          } else {
+                            setActiveTooltip(pt.id);
+                          }
+                      onHeatPointClick?.(pt.id);
+                    }
+                  }}
+                  className={`group absolute -translate-x-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 shadow-xl ${
+                    isSelected 
+                      ? 'bg-primary border-primary text-white scale-110 ring-4 ring-primary/20 shadow-primary/30' 
+                      : (heatColor ? 'border-rose-400 ring-2 ring-rose-100' : 'bg-white/90 border-slate-300 text-slate-500 shadow-md')
+                  } ${!isProminent ? 'opacity-40 scale-90' : 'opacity-100'}`}
+                  style={{ 
+                    left: `${pt.x}%`, 
+                    top: `${pt.y}%`, 
+                    cursor: interactive || (!interactive && defectCount > 0) ? 'pointer' : 'default',
+                    backgroundColor: isSelected ? undefined : (heatColor || undefined),
+                    color: isSelected ? undefined : getHeatTextColor(pt),
+                    zIndex: isSelected || hasHeat || isTooltipActive ? 150 : 10
+                  }}
+                >
+                  <span className={`${isSelected ? 'text-[12px]' : 'text-[11px]'} font-black font-mono tracking-tighter`}>{pt.id}</span>
+                  
+                  {((interactive || defectCount > 0)) && (
+                    <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center bg-white text-slate-900 text-[9px] font-black font-mono px-3 py-2.5 rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] uppercase tracking-widest border border-slate-200 animate-in fade-in zoom-in-95 duration-200 transition-all ${
+                      showTooltipBelow ? 'top-full mt-3' : 'bottom-full mb-3'
+                    } ${
+                      isTooltipActive ? 'flex opacity-100 scale-100 pointer-events-auto' : 'hidden md:group-hover:flex md:pointer-events-none'
+                    }`}>
+                      {/* Arrow pointing to node */}
+                      <div className={`absolute left-1/2 -translate-x-1/2 border-8 border-transparent ${
+                        showTooltipBelow ? 'bottom-full border-b-white' : 'top-full border-t-white'
+                      }`} />
+
+                      <div className="flex justify-between items-center w-full border-b border-slate-100 pb-2 mb-2">
+                        <span className="flex-1 text-center text-[10px] text-slate-900 font-black">{pt.label}</span>
+                        {isTooltipActive && (
+                          <X className="w-4 h-4 ml-2 cursor-pointer hover:text-rose-500 md:hidden bg-slate-100 rounded-full p-1" onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTooltip(null);
+                          }} />
+                        )}
+                      </div>
+                      {defectCount > 0 && (
+                        <div className="w-full space-y-2.5">
+                          <div className="flex justify-between items-center text-rose-600 font-black mb-1 p-1.5 bg-rose-50 rounded-xl border border-rose-100">
+                            <span>{defectCount} Defects</span>
+                            <Badge className="bg-rose-500 text-white border-none h-4 text-[8px]">{Math.round((defectCount / (totalDefectsCount || 1)) * 100)}%</Badge>
+                          </div>
+                          
+                          <div className="flex flex-col gap-1.5 pt-1">
+                            {Object.entries(mergedDetails)
+                              .sort(([, aCount], [, bCount]) => (bCount as number) - (aCount as number))
+                              .map(([sub, count]) => {
+                                const subCount = count as number;
+                                return (
+                                  <div key={sub} className="flex flex-col gap-1 group/item">
+                                    <div className="flex justify-between items-center text-[8px] text-slate-500 font-bold">
+                                      <span className="truncate max-w-[100px]">{sub}</span>
+                                      <span className="text-primary">{subCount}</span>
+                                    </div>
+                                    <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-primary/40 group-hover/item:bg-primary transition-all" 
+                                        style={{ width: `${(subCount / defectCount) * 100}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
                         </div>
                       )}
                       
@@ -334,7 +368,7 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
                         <>
                           <div className="absolute inset-0 rounded-full bg-rose-500/30 animate-ping" />
                           <div className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-black z-[10] shadow-md ${defectCount >= 3 ? 'bg-rose-900 text-white' : 'bg-rose-600 text-white'}`}>
-                            {defectCount > 9 ? '9+' : defectCount}
+                            {defectCount > 99 ? '99+' : defectCount}
                           </div>
                         </>
                       )}
@@ -382,14 +416,20 @@ export const GarmentModel: React.FC<GarmentModelProps> = ({
               <div className="absolute top-4 sm:top-6 right-4 sm:right-6 flex bg-slate-100/80 backdrop-blur-md p-1 rounded-xl border border-slate-200 z-[60] shadow-sm">
                 <button 
                   type="button"
-                  onClick={() => setView('front')}
+                  onClick={() => {
+                    setView('front');
+                    setActiveTooltip(null);
+                  }}
                   className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${view === 'front' ? 'bg-white text-primary shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Front
                 </button>
                 <button 
                   type="button"
-                  onClick={() => setView('back')}
+                  onClick={() => {
+                    setView('back');
+                    setActiveTooltip(null);
+                  }}
                   className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${view === 'back' ? 'bg-white text-primary shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Back
