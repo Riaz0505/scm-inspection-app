@@ -36,6 +36,7 @@
         "barcode": { "type": "string" },
         "name": { "type": "string" },
         "type": { "type": "string" },
+        "modelId": { "type": "string" },
         "imageUrl": { "type": "string" },
         "layoutImage": { "type": "string" },
         "customPoints": {
@@ -55,6 +56,23 @@
         "icon": { "type": "string" },
         "subCategories": { "type": "array" }
       }
+    },
+    "GarmentModel": {
+      "title": "Garment Model",
+      "description": "A template for a garment type with predefined marker points",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "frontImageUrl": { "type": "string" },
+        "backImageUrl": { "type": "string" },
+        "customPoints": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["name", "type"]
     }
   },
   "firestore": {
@@ -69,6 +87,10 @@
     "/categories": {
       "schema": "Category",
       "description": "Defect categories master data"
+    },
+    "/models": {
+      "schema": "GarmentModel",
+      "description": "Garment model templates"
     }
   }
 }

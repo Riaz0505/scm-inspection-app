@@ -5,11 +5,21 @@ export interface Style {
   barcode: string;
   name: string;
   type: GarmentType;
+  modelId?: string;
   imageUrl?: string;
   frontImageUrl?: string;
   backImageUrl?: string;
   layoutImage?: string;
   customPoints?: { id: string; label: string; x: number; y: number }[];
+}
+
+export interface GarmentModel {
+  id: string;
+  name: string;
+  type: GarmentType;
+  frontImageUrl?: string;
+  backImageUrl?: string;
+  customPoints: { id: string; label: string; x: number; y: number }[];
 }
 
 export interface SelectedDefect {

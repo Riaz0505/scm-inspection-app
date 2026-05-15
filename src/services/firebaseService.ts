@@ -105,5 +105,30 @@ export const firebaseService = {
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, 'categories');
     }
+  },
+
+  // Garment Models
+  async getModels() {
+    try {
+      const snapshot = await getDocs(collection(db, 'models'));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as any));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, 'models');
+    }
+  },
+
+  async saveModel(model: any) {
+    try {
+      if (model.id) {
+        const docRef = doc(db, 'models', model.id);
+        await updateDoc(docRef, model);
+        return model.id;
+      } else {
+        const docRef = await addDoc(collection(db, 'models'), model);
+        return docRef.id;
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'models');
+    }
   }
 };

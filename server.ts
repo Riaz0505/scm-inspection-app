@@ -126,11 +126,26 @@ const CategorySchema = new mongoose.Schema({
 });
 const CategoryModel = mongoose.model("Category", CategorySchema, "categories");
 
+const GarmentModelSchema = new mongoose.Schema({
+  name: String,
+  type: String,
+  frontImageUrl: String,
+  backImageUrl: String,
+  customPoints: [{
+    id: String,
+    label: String,
+    x: Number,
+    y: Number
+  }]
+});
+const GarmentModelModel = mongoose.model("GarmentModel", GarmentModelSchema, "models");
+
 // Fallback Data Helpers
 const DATA_DIR = path.join(process.cwd(), "data");
 const STYLES_FILE = path.join(DATA_DIR, "styles.json");
 const DEFECTS_FILE = path.join(DATA_DIR, "defects.json");
 const CATEGORIES_FILE = path.join(DATA_DIR, "categories.json");
+const MODELS_FILE = path.join(DATA_DIR, "models.json");
 
 const DEFAULT_CATEGORIES = [
   {
@@ -238,6 +253,7 @@ if (!fs.existsSync(DATA_DIR)) {
 readJsonFile(STYLES_FILE, [{ id: "style-1", barcode: "123456", name: "Classic White T-Shirt", type: "tshirt" }]);
 readJsonFile(DEFECTS_FILE, []);
 readJsonFile(CATEGORIES_FILE, DEFAULT_CATEGORIES);
+readJsonFile(MODELS_FILE, []);
 
 // API Routes
 app.post("/api/admin/seed", async (req, res) => {
@@ -611,6 +627,67 @@ app.post("/api/upload", upload.single("image"), (req: any, res: any) => {
   
   console.log(`✅ File uploaded: ${filename} -> ${imageUrl}`);
   res.json({ imageUrl, fullUrl: imageUrl });
+});
+
+// Garment Models API
+app.get("/api/models", async (req, res) => {
+  try {
+    let models = [];
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+      models = await GarmentModelModel.find();
+    } else {
+      models = readJsonFile(MODELS_FILE, []);
+    }
+    res.json(models);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch models" });
+  }
+});
+
+app.post("/api/models", async (req, res) => {
+  try {
+    const data = req.body;
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+      let doc;
+      if (data._id || data.id) {
+        doc = await GarmentModelModel.findByIdAndUpdate(data._id || data.id, data, { new: true, upsert: true });
+      } else {
+        doc = new GarmentModelModel(data);
+        await doc.save();
+      }
+      res.json(doc);
+    } else {
+      const models = readJsonFile(MODELS_FILE, []);
+      const id = data.id || data._id || Date.now().toString();
+      const index = models.findIndex((m: any) => m.id === id);
+      const newData = { ...data, id };
+      if (index !== -1) {
+        models[index] = newData;
+      } else {
+        models.push(newData);
+      }
+      fs.writeFileSync(MODELS_FILE, JSON.stringify(models, null, 2));
+      res.json(newData);
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Failed to save model" });
+  }
+});
+
+app.delete("/api/models/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+      await GarmentModelModel.findByIdAndDelete(id);
+    } else {
+      const models = readJsonFile(MODELS_FILE, []);
+      const filtered = models.filter((m: any) => m.id !== id);
+      fs.writeFileSync(MODELS_FILE, JSON.stringify(filtered, null, 2));
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete model" });
+  }
 });
 
 app.get("/api/defects", async (req, res) => {
