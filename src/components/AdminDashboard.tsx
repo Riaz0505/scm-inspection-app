@@ -47,190 +47,212 @@ const DetailModal = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[85vh]"
       >
-        <div className="bg-slate-900 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between text-white flex-shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/20 rounded-lg sm:rounded-xl flex items-center justify-center border border-white/10">
-              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+        <div className="bg-slate-900 px-5 sm:px-8 py-4 sm:py-6 flex items-center justify-between text-white flex-shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
+              <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest truncate">{report.styleName}</h3>
-              <p className="text-[8px] sm:text-[10px] font-mono opacity-50">TRK_ID: {(report.reportId || report.id || (report as any)._id || 'N/A')?.substring(0, 8)}</p>
+              <h3 className="text-sm sm:text-lg font-black uppercase tracking-[0.05em] truncate">{report.styleName}</h3>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-[8px] sm:text-[10px] font-mono opacity-50 uppercase tracking-widest leading-none">TRK_ID: {(report.reportId || report.id || (report as any)._id || 'N/A')?.substring(0, 8)}</p>
+                <div className="w-1 h-1 bg-white/20 rounded-full" />
+                <p className="text-[8px] sm:text-[10px] font-mono opacity-50 uppercase tracking-widest leading-none">{report.styleId}</p>
+              </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-full transition-colors flex-shrink-0 ml-2">
-            <X className="w-4 h-4 sm:w-5 sm:h-5 text-white/60" />
-          </button>
+          <div className="flex items-center gap-3">
+             <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${report.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'}`}>
+               {report.status}
+             </div>
+             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors flex-shrink-0">
+               <X className="w-5 h-5 sm:w-6 sm:h-6 text-white/40" />
+             </button>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide -webkit-overflow-scrolling-touch px-4 sm:px-6 py-6 sm:py-8">
-          <div className="space-y-6 sm:space-y-8 pb-10">
-            {/* Header Info */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-1">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Marked Points</span>
-                <div className="flex flex-wrap gap-1">
-                  {report.part?.split(',').map(p => (
-                    <Badge key={p} variant="secondary" className="text-[8px] font-black uppercase px-1.5 py-0">
-                      {p.trim()}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Checking Inspector</span>
-                <p className="text-[11px] font-black text-slate-900 truncate uppercase">{report.inspectorName || 'Unknown'}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Operation</span>
-                <p className="text-[11px] font-black text-primary truncate uppercase">{report.operation || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Fabric Operator</span>
-                <p className="text-[11px] font-black text-slate-900 truncate uppercase">{report.operatorName || 'Unknown'}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Inspector Email</span>
-                <p className="text-[11px] font-black text-slate-400 truncate text-[9px]">{report.reporterEmail}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Date / Time</span>
-                <p className="text-[11px] font-black text-slate-900">{new Date(report.createdAt).toLocaleString()}</p>
-              </div>
-              <div className="space-y-1 col-span-2 sm:col-span-1">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</span>
-                <div>
-                  <Badge className={report.status === 'pending' ? 'bg-amber-100 text-amber-600 border-none px-2 text-[9px]' : 'bg-green-100 text-green-600 border-none px-2 text-[9px]'}>
-                    {report.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            <Separator className="opacity-50" />
-
-            {/* Visual Map */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest text-primary border-primary/20 bg-primary/5">
-                  Click Points to Filter
-                </Badge>
-                {selectedPoint && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setSelectedPoint(null)}
-                    className="h-6 text-[8px] font-black uppercase text-rose-500 hover:bg-rose-50"
-                  >
-                    Clear Filter
-                  </Button>
-                )}
-              </div>
-              <div className="rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 shadow-inner overflow-hidden flex justify-center">
-                <div className="w-full max-w-[280px]">
-                  <GarmentModel 
-                    type={(report.styleName?.toLowerCase().includes('shirt') || report.styleId?.toLowerCase().includes('shirt')) ? 'tshirt' : ((report.styleName?.toLowerCase().includes('short') || report.styleId?.toLowerCase().includes('short')) ? 'shorts' : 'tshirt')} 
-                    layoutImage={report.layoutImage}
-                    frontImageUrl={report.frontImageUrl}
-                    backImageUrl={report.backImageUrl}
-                    customPoints={report.customPoints}
-                    selectedParts={report.part ? report.part.split(',').map(p => p.trim()) : []} 
-                    heatMapData={(report.defects || []).reduce((acc, d) => {
-                      if (d.part) acc[d.part] = (acc[d.part] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)}
-                    onPartClick={(part) => {
-                      if (report.part?.includes(part)) {
-                        setSelectedPoint(part === selectedPoint ? null : part);
-                      }
-                    }}
-                    interactive={false}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator className="opacity-50" />
-
-            {/* Filtered Defects */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-primary" />
-                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">
-                    {selectedPoint ? `Point Details: ${selectedPoint}` : `All Visual Evidence (${report.defects?.length || 0})`}
-                  </h4>
-                </div>
-              </div>
+        <div className="flex-1 overflow-y-auto scrollbar-hide -webkit-overflow-scrolling-touch px-6 sm:px-10 py-6 sm:py-10">
+          <div className="space-y-10 sm:space-y-12">
+            
+            {/* Split Layout for Desktop/Tablet */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredDefects.length > 0 ? (
-                  filteredDefects.map((defect, i) => (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      key={i} 
-                      className="group relative rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm hover:shadow-md transition-all"
-                    >
-                      <div className="aspect-[4/3] bg-slate-100 overflow-hidden relative">
-                        <img 
-                          src={defect.imageUrl} 
-                          alt={defect.subCategory} 
-                          className="w-full h-full object-cover transition-transform group-hover:scale-110" 
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute top-2 right-2 flex gap-1">
-                          <Badge className="bg-slate-900/80 backdrop-blur-sm text-white border-none text-[8px] font-black">
-                            {defect.category}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="p-3">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <Badge variant="outline" className="text-[7px] h-3.5 border-primary/20 text-primary bg-primary/5 px-1.5 uppercase font-black">
-                            ID: {defect.part || 'MAIN'}
-                          </Badge>
-                        </div>
-                        <h5 className="text-[10px] font-black uppercase tracking-wide text-slate-900 leading-tight">{defect.subCategory}</h5>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="col-span-2 py-12 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50">
-                    <AlertCircle className="w-8 h-8 mb-3 opacity-20" />
-                    <p className="text-[10px] uppercase font-black tracking-[0.2em]">{selectedPoint ? 'No Detail for this point' : 'Missing detail objects'}</p>
+              {/* Left Column: Stats & Map */}
+              <div className="md:col-span-5 space-y-8">
+                {/* Header Info */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-6">
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Marked Points</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {report.part?.split(',').map(p => (
+                        <Badge key={p} variant="secondary" className="text-[9px] font-black uppercase px-2 py-0.5 bg-slate-100 text-slate-600 border-none">
+                          {p.trim()}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                )}
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Operation</span>
+                    <p className="text-[11px] font-black text-primary truncate uppercase mt-1">{report.operation || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Fabric Operator</span>
+                    <p className="text-[11px] font-black text-slate-900 truncate uppercase mt-1">{report.operatorName || 'Unknown'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Inspector Name</span>
+                    <p className="text-[11px] font-black text-slate-900 truncate uppercase mt-1">{report.inspectorName || 'Unknown'}</p>
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Date / Time</span>
+                    <p className="text-[11px] font-black text-slate-900 mt-1">{new Date(report.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                  </div>
+                </div>
+
+                <Separator className="opacity-50" />
+
+                {/* Map Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Defect Map</h4>
+                    {selectedPoint && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setSelectedPoint(null)}
+                        className="h-6 text-[8px] font-black uppercase text-rose-500 hover:bg-rose-50"
+                      >
+                        Reset Filter
+                      </Button>
+                    )}
+                  </div>
+                  <div className="rounded-3xl border-2 border-slate-100 bg-slate-50/50 p-6 shadow-inner overflow-hidden flex justify-center">
+                    <div className="w-full max-w-[320px]">
+                      <GarmentModel 
+                        type={(report.styleName?.toLowerCase().includes('shirt') || report.styleId?.toLowerCase().includes('shirt')) ? 'tshirt' : ((report.styleName?.toLowerCase().includes('short') || report.styleId?.toLowerCase().includes('short')) ? 'shorts' : 'tshirt')} 
+                        layoutImage={report.layoutImage}
+                        frontImageUrl={report.frontImageUrl}
+                        backImageUrl={report.backImageUrl}
+                        customPoints={report.customPoints}
+                        selectedParts={report.part ? report.part.split(',').map(p => p.trim()) : []} 
+                        heatMapData={(report.defects || []).reduce((acc, d) => {
+                          if (d.part) acc[d.part] = (acc[d.part] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>)}
+                        onPartClick={(part) => {
+                          if (report.part?.includes(part)) {
+                            setSelectedPoint(part === selectedPoint ? null : part);
+                          }
+                        }}
+                        interactive={true}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Defects & Evidence */}
+              <div className="md:col-span-7 flex flex-col min-h-0">
+                <div className="flex-1 space-y-8">
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <ImageIcon className="w-5 h-5 text-primary" />
+                        <h4 className="text-sm font-black uppercase tracking-tight text-slate-900">
+                          {selectedPoint ? `Visual Proof: ${selectedPoint}` : `Visual Evidence Archive (${report.defects?.length || 0})`}
+                        </h4>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {filteredDefects.length > 0 ? (
+                        filteredDefects.map((defect, i) => {
+                          const isProof = defect.imageUrl && !defect.imageUrl.includes('picsum') && !defect.imageUrl.includes('images.unsplash');
+                          return (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.1 }}
+                              key={`${defect.part}-${defect.subCategory}-${i}`} 
+                              className="group relative rounded-3xl border border-slate-100 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all hover:border-primary/20"
+                            >
+                              <div className="aspect-[4/3] bg-slate-100 overflow-hidden relative">
+                                <img 
+                                  src={defect.imageUrl} 
+                                  alt={defect.subCategory} 
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute top-3 left-3 flex flex-col gap-2">
+                                  <Badge className="bg-slate-900/90 backdrop-blur-md text-white border-none text-[8px] font-black tracking-widest px-2 py-1 shadow-lg w-max">
+                                    {defect.category}
+                                  </Badge>
+                                  {isProof && (
+                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black tracking-widest px-2 py-1 shadow-lg flex items-center gap-1.5 w-max">
+                                      <CheckCircle2 className="w-2.5 h-2.5" /> PROOF
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 translate-y-2 group-hover:translate-y-0 transition-transform">
+                                   <div className="flex items-center gap-2 text-white">
+                                      <MapPin className="w-3 h-3 text-primary" />
+                                      <span className="text-[9px] font-black uppercase tracking-widest">{defect.part}</span>
+                                   </div>
+                                </div>
+                              </div>
+                              <div className="p-4">
+                                <h5 className="text-[12px] font-black uppercase tracking-wide text-slate-900 leading-tight group-hover:text-primary transition-colors">{defect.subCategory}</h5>
+                                <div className="flex items-center gap-2 mt-2 opacity-50">
+                                   <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                   <span className="text-[8px] font-black uppercase tracking-widest">Inspection Marker</span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })
+                      ) : (
+                        <div className="col-span-2 py-20 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50/50">
+                          <AlertCircle className="w-12 h-12 mb-4 opacity-10" />
+                          <p className="text-[11px] uppercase font-black tracking-[0.3em] opacity-40">{selectedPoint ? 'No Evidence recorded for this point' : 'Archive empty'}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {report.notes && (
+                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner">
+                      <div className="flex items-center gap-2 mb-3">
+                         <div className="w-1 h-3 bg-primary rounded-full" />
+                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Additional Inspector Notes</span>
+                      </div>
+                      <p className="text-sm text-slate-700 italic leading-relaxed font-medium">"{report.notes}"</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-
-            {report.notes && (
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-2">Inspection Notes</span>
-                <p className="text-xs text-slate-600 italic leading-relaxed">"{report.notes}"</p>
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3 flex-shrink-0">
+        <div className="p-6 sm:p-10 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row gap-4 sm:gap-6 flex-shrink-0 animate-in slide-in-from-bottom-4">
           <Button 
             variant="outline" 
             onClick={onClose} 
-            className="flex-1 h-12 text-[10px] font-black uppercase tracking-widest text-slate-400 rounded-xl"
+            className="flex-1 h-14 sm:h-16 text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-500 rounded-2xl md:rounded-3xl border-slate-200 bg-white hover:bg-slate-50 shadow-sm"
           >
-            Back to Overview
+            Close Detail
           </Button>
           {report.status === 'pending' && (
             <Button 
               onClick={() => onResolve(report.reportId || report.id || (report as any)._id)}
-              className="flex-[2] h-12 bg-primary text-white font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+              className="flex-[2] h-14 sm:h-16 bg-primary text-white font-black uppercase tracking-widest rounded-2xl md:rounded-3xl shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all text-xs sm:text-sm"
             >
               Approve & Resolve Faults
             </Button>
@@ -966,7 +988,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                   
                   {categories && categories.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pb-10">
                       {categories.map((cat, idx) => {
                         const catId = (cat as any)._id || (cat as any).id || cat.name;
                         return (
@@ -1142,7 +1164,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </TabsContent>
         <TabsContent value="models" className="mt-0 outline-none flex-1">
           <div className="h-[500px] sm:h-[calc(100vh-450px)] min-h-[400px] overflow-y-auto scrollbar-hide -webkit-overflow-scrolling-touch pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pr-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pr-4">
               {/* Add/Edit Model */}
               <Card className="border-slate-200 shadow-sm border-2">
                 <CardHeader className="p-6 bg-slate-50/50">
@@ -1353,7 +1375,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </TabsContent>
         <TabsContent value="styles" className="mt-0 outline-none flex-1">
           <div className="h-[500px] sm:h-[calc(100vh-450px)] min-h-[400px] overflow-y-auto scrollbar-hide -webkit-overflow-scrolling-touch pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pr-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pr-4">
               {/* Add/Edit Section */}
               <Card className="border-slate-200 shadow-sm border-2">
                 <CardHeader className="p-6 bg-slate-50/50">
@@ -1642,7 +1664,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <TabsContent value="analytics" className="mt-0 outline-none flex-1">
           <div className="h-[500px] sm:h-[calc(100vh-450px)] min-h-[400px] overflow-y-auto scrollbar-hide -webkit-overflow-scrolling-touch pb-20">
             <div className="space-y-8 pr-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Style Breakdown */}
                 <Card className="border-slate-200 shadow-sm">
                   <CardHeader className="p-6">
@@ -1724,7 +1746,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               {/* Operator & Worker Performance Sections */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                 {/* Operator Leaderboard (Existing) */}
                 <Card className="border-slate-200 shadow-sm">
                   <CardHeader className="p-6">

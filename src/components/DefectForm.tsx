@@ -200,11 +200,11 @@ export const DefectForm: React.FC<DefectFormProps> = ({
       </div>
 
       {/* Main Context - Responsive Split */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 divide-y md:divide-y-0 md:divide-x divide-slate-100 overflow-hidden">
         
         {/* Left: Category & Subcategory Picker - Scrollable */}
-        <div className="flex-[3] flex flex-col min-h-0 h-[60%] lg:h-full overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-5 scrollbar-hide -webkit-overflow-scrolling-touch">
+        <div className="flex-[3] flex flex-col min-h-0 h-[55%] md:h-full overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-hide -webkit-overflow-scrolling-touch">
             <AnimatePresence mode="wait">
               {!selectedCategory ? (
                 <motion.div 
@@ -212,7 +212,7 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="grid grid-cols-2 gap-3"
+                  className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6"
                 >
                   {categories.map((cat) => {
                     const countInCat = basket.filter(i => i.category === cat.name).length;
@@ -220,17 +220,17 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                       <button
                         key={cat.name}
                         onClick={() => handleCategorySelect(cat)}
-                        className={`flex flex-col items-center p-6 rounded-[2.5rem] border-2 transition-all group relative ${
+                        className={`flex flex-col items-center p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-2 transition-all group relative ${
                           countInCat > 0 ? 'border-primary bg-primary/5 shadow-inner' : 'border-slate-50 bg-slate-50/50 hover:border-slate-200 hover:bg-white hover:shadow-xl'
                         }`}
                       >
-                        <div className="w-20 h-20 rounded-3xl overflow-hidden mb-4 border-2 border-white bg-white shadow-lg group-hover:scale-110 transition-transform duration-500">
+                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl overflow-hidden mb-3 md:mb-4 border-2 border-white bg-white shadow-lg group-hover:scale-110 transition-transform duration-500">
                           <img src={cat.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         </div>
-                        <span className="text-[11px] font-black uppercase tracking-widest text-slate-900 group-hover:text-primary transition-colors">{cat.name}</span>
+                        <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-slate-900 group-hover:text-primary transition-colors text-center">{cat.name}</span>
                         {countInCat > 0 && (
-                          <div className="absolute top-4 right-4 animate-in zoom-in duration-300">
-                            <Badge className="bg-primary text-white text-[10px] px-2 h-6 min-w-[24px] flex justify-center border-2 border-white shadow-md">{countInCat}</Badge>
+                          <div className="absolute top-2 right-2 md:top-4 md:right-4 animate-in zoom-in duration-300">
+                            <Badge className="bg-primary text-white text-[9px] md:text-[10px] px-1.5 md:px-2 h-5 md:h-6 min-w-[20px] md:min-w-[24px] flex justify-center border-2 border-white shadow-md">{countInCat}</Badge>
                           </div>
                         )}
                       </button>
@@ -243,19 +243,19 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  className="space-y-4"
+                  className="space-y-4 md:space-y-6"
                 >
                   <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-3">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="h-9 px-3 font-black text-[10px] uppercase text-primary hover:bg-primary/10 rounded-xl flex items-center gap-2 bg-primary/5">
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="h-9 px-3 font-black text-[9px] md:text-[10px] uppercase text-primary hover:bg-primary/10 rounded-xl flex items-center gap-2 bg-primary/5 transition-all">
                         <Plus className="w-3.5 h-3.5 rotate-45" /> ALL MISTAKES
                       </Button>
                       <div className="w-1 h-4 bg-slate-200 rounded-full" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{selectedCategory.name}</span>
+                      <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500">{selectedCategory.name}</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-2 md:gap-3">
                     {selectedCategory.subCategories.map((sub) => {
                        const isSelected = isSubInBasketForActive(selectedCategory.name, sub.name);
                        const isPartial = isSubInBasketAnywhere(selectedCategory.name, sub.name) && !isSelected;
@@ -292,20 +292,20 @@ export const DefectForm: React.FC<DefectFormProps> = ({
         </div>
 
         {/* Right: Consolidated Summary Log - Separately Scrollable */}
-        <div className="flex-[2] flex flex-col bg-slate-50/30 min-h-0 h-[40%] lg:h-full overflow-hidden lg:relative pb-2 lg:pb-0">
-          <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+        <div className="flex-[2] flex flex-col bg-slate-50/30 min-h-0 h-[45%] md:h-full overflow-hidden md:relative pb-2 md:pb-0">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between flex-shrink-0 bg-white">
             <div className="flex items-center gap-2">
               <ClipboardList className="w-3.5 h-3.5 text-primary" />
               <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-900">Summary Log</h4>
             </div>
-            <Badge className="bg-slate-900 text-white border-none h-4 px-1.5 text-[8px] font-black">{basket.length}</Badge>
+            <Badge className="bg-slate-900 text-white border-none h-5 px-2 text-[9px] font-black">{basket.length}</Badge>
           </div>
 
-          <ScrollArea className="flex-1 px-4 py-2 -webkit-overflow-scrolling-touch">
+          <ScrollArea className="flex-1 px-3 md:px-5 py-2 -webkit-overflow-scrolling-touch">
             <div className="space-y-4 pb-4">
               {Object.keys(groupedLog).length > 0 ? (
                 (Object.entries(groupedLog) as [string, SelectedDefect[]][]).map(([part, defects]) => (
-                  <div key={part} className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                  <div key={part} className="space-y-2 animate-in fade-in slide-in-from-top-1">
                     <div className="flex items-center gap-2 mb-1">
                        <span className="text-[8px] font-black text-slate-400 font-mono uppercase tracking-[0.2em]">{part}</span>
                        <div className="h-[1px] flex-1 bg-slate-200/50" />
@@ -313,19 +313,19 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                     {defects.map((defect) => (
                       <div 
                         key={`${defect.part}-${defect.category}-${defect.subCategory}`}
-                        className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm transition-all"
+                        className="flex items-center gap-3 bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md"
                       >
-                        <div className="w-10 h-10 rounded-md overflow-hidden bg-slate-100 flex-shrink-0 text-[10px] relative">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 text-[10px] relative border border-slate-50">
                           <img src={defect.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           {uploadingId === `${defect.part}-${defect.category}-${defect.subCategory}` && (
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                               <Loader2 className="w-4 h-4 text-white animate-spin" />
+                               <Loader2 className="w-5 h-5 text-white animate-spin" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 overflow-hidden">
-                          <p className="text-[9px] font-black uppercase text-slate-800 truncate leading-tight">{defect.subCategory}</p>
-                          <div className="flex gap-2 mt-1">
+                          <p className="text-[10px] font-black uppercase text-slate-800 truncate leading-tight tracking-wide">{defect.subCategory}</p>
+                          <div className="flex gap-2 mt-1.5">
                              <label className="cursor-pointer">
                                 <input 
                                   type="file" 
@@ -333,42 +333,46 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                                   accept="image/*" 
                                   onChange={(e) => handleDefectImageUpload(e, defect.part, defect.category, defect.subCategory)}
                                 />
-                                <span className="text-[7px] font-black text-primary flex items-center gap-1 hover:underline">
+                                <span className={`px-2 py-1 rounded-lg text-[7px] font-black flex items-center gap-1.5 transition-all ${
+                                  defect.imageUrl.includes('picsum') || defect.imageUrl.includes('images.unsplash') || !defect.imageUrl
+                                    ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                                    : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                }`}>
                                    <ImageIcon className="w-2.5 h-2.5" />
-                                   {defect.imageUrl.includes('picsum') || defect.imageUrl.includes('images.unsplash') ? 'ADD PHOTO' : 'CHANGE PHOTO'}
+                                   {defect.imageUrl.includes('picsum') || defect.imageUrl.includes('images.unsplash') || !defect.imageUrl ? 'SNAP PROOF' : 'UPDATE PHOTO'}
                                 </span>
                              </label>
                           </div>
                         </div>
                         <button 
                           onClick={() => removeFromBasket(defect.category, defect.subCategory, defect.part)}
-                          className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border-none"
+                          className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors border-none"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
                   </div>
                 ))
               ) : (
-                <div className="h-24 flex flex-col items-center justify-center opacity-30 text-center">
-                   <Plus className="w-6 h-6 mb-1 text-slate-400" />
-                   <p className="text-[8px] font-black uppercase text-slate-400 leading-tight">Add mistakes<br/>to your selection</p>
+                <div className="h-32 flex flex-col items-center justify-center opacity-30 text-center">
+                   <Plus className="w-8 h-8 mb-2 text-slate-400" />
+                   <p className="text-[9px] font-black uppercase text-slate-400 leading-relaxed tracking-widest">Select target points<br/>to log defects</p>
                 </div>
               )}
             </div>
           </ScrollArea>
 
-          {/* Desktop Summary Footer */}
-          <div className="hidden lg:block p-6 bg-white border-t border-slate-100 space-y-4 flex-shrink-0 mt-auto sticky bottom-0 z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
-            <div className="grid grid-cols-2 gap-3">
+          {/* Tablet/Desktop Summary Footer */}
+          <div className="hidden md:block p-5 lg:p-7 bg-white border-t border-slate-100 space-y-4 flex-shrink-0 mt-auto sticky bottom-0 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.04)]">
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
               <div className="space-y-1">
                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Operation</label>
                 <Input 
                   placeholder="EX: SIDE SEAM" 
                   value={operation} 
                   onChange={(e) => setOperation(e.target.value)}
-                  className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-11 rounded-xl placeholder:text-slate-300 text-slate-700 focus-visible:ring-primary/20 shadow-inner uppercase"
+                  className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-11 md:h-12 rounded-xl placeholder:text-slate-300 text-slate-700 focus-visible:ring-primary/20 shadow-inner uppercase"
                 />
               </div>
               <div className="space-y-1">
@@ -377,34 +381,34 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                   placeholder="WHO DID IT?" 
                   value={operatorName} 
                   onChange={(e) => setOperatorName(e.target.value)}
-                  className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-11 rounded-xl placeholder:text-slate-300 text-slate-700 focus-visible:ring-primary/20 shadow-inner uppercase"
+                  className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-11 md:h-12 rounded-xl placeholder:text-slate-300 text-slate-700 focus-visible:ring-primary/20 shadow-inner uppercase"
                 />
               </div>
             </div>
             <Input 
-              placeholder="NOTES..." 
+              placeholder="ADDITIONAL NOTES..." 
               value={notes} 
               onChange={(e) => setNotes(e.target.value)}
-              className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-11 rounded-xl placeholder:text-slate-300 text-slate-700 focus-visible:ring-primary/20 shadow-inner"
+              className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-11 md:h-12 rounded-xl placeholder:text-slate-300 text-slate-700 focus-visible:ring-primary/20 shadow-inner"
             />
             <Button 
               disabled={basket.length === 0}
               onClick={handleSubmit}
-              className="w-full h-16 bg-primary hover:bg-primary/95 text-white font-black uppercase tracking-[0.15em] rounded-2xl shadow-xl shadow-primary/30 transition-all active:scale-95 disabled:bg-slate-200 disabled:shadow-none flex items-center justify-center gap-3 text-[11px]"
+              className="w-full h-14 md:h-16 bg-primary hover:bg-primary/95 text-white font-black uppercase tracking-[0.15em] rounded-2xl shadow-xl shadow-primary/30 transition-all active:scale-95 disabled:bg-slate-200 disabled:shadow-none flex items-center justify-center gap-3 text-[11px] md:text-xs"
             >
-              <Send className="w-4 h-4" /> SUBMIT INSPECTION
+              <Send className="w-4 h-4 md:w-5 md:h-5" /> SUBMIT INSPECTION
             </Button>
           </div>
         </div>
       </div>
 
       {/* Global Mobile Footer - Always visible at bottom of entire form */}
-      <div className="lg:hidden p-5 bg-white border-t border-slate-100 space-y-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
+      <div className="md:hidden p-5 bg-white border-t border-slate-100 space-y-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Operation</label>
             <Input 
-              placeholder="OPERATION" 
+              placeholder="OPR" 
               value={operation} 
               onChange={(e) => setOperation(e.target.value)}
               className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-12 rounded-xl shadow-inner uppercase"
