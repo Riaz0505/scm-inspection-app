@@ -48,6 +48,7 @@ export interface DefectReport {
   operation?: string;
   operatorName?: string;
   notes?: string;
+  reportImageUrl?: string;
   defects?: SelectedDefect[]; // Detailed list with images
   customPoints?: { id: string; label: string; x: number; y: number }[];
 }

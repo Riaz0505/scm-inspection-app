@@ -98,6 +98,7 @@ const DefectSchema = new mongoose.Schema({
   operation: String,
   operatorName: String,
   notes: String,
+  reportImageUrl: String,
   defects: [{
     category: String,
     subCategory: String,

@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 interface DefectFormProps {
   parts: string[];
   categories: DefectCategory[];
-  onSubmit: (selectedDefects: SelectedDefect[], notes: string, operation: string, operatorName: string) => void;
+  onSubmit: (selectedDefects: SelectedDefect[], notes: string, operation: string, operatorName: string, reportImageUrl?: string) => void;
   onCancel: () => void;
   onReset: () => void;
   initialOperation?: string;
@@ -34,6 +34,7 @@ export const DefectForm: React.FC<DefectFormProps> = ({
   const [notes, setNotes] = useState('');
   const [operation, setOperation] = useState(initialOperation);
   const [operatorName, setOperatorName] = useState(initialOperatorName);
+  const [reportImageUrl, setReportImageUrl] = useState<string | undefined>(undefined);
   const [activePart, setActivePart] = useState<string>(parts[0] || '');
   const [previewSub, setPreviewSub] = useState<DefectSubCategory | null>(null);
 
@@ -83,6 +84,32 @@ export const DefectForm: React.FC<DefectFormProps> = ({
     }
   };
 
+  const handleGeneralImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingId('general-report-image');
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const resp = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        setReportImageUrl(data.imageUrl);
+        toast.success('Inspection proof uploaded');
+      }
+    } catch (err) {
+      toast.error('Failed to upload inspection proof');
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
   const toggleSub = (sub: DefectSubCategory) => {
     if (!selectedCategory || !activePart) {
       if (!activePart && parts.length > 0) setActivePart(parts[0]);
@@ -126,7 +153,7 @@ export const DefectForm: React.FC<DefectFormProps> = ({
       toast.error('Please enter Operation and Operator Name');
       return;
     }
-    onSubmit(basket, notes, operation, operatorName);
+    onSubmit(basket, notes, operation, operatorName, reportImageUrl);
   };
 
   const isSubInBasketForActive = (catName: string, subName: string) => {
@@ -385,12 +412,41 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                 />
               </div>
             </div>
-            <Input 
-              placeholder="ADDITIONAL NOTES..." 
-              value={notes} 
-              onChange={(e) => setNotes(e.target.value)}
-              className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-11 md:h-12 rounded-xl placeholder:text-slate-300 text-slate-700 focus-visible:ring-primary/20 shadow-inner"
-            />
+            <div className="flex items-center gap-3">
+              <Input 
+                placeholder="ADDITIONAL NOTES..." 
+                value={notes} 
+                onChange={(e) => setNotes(e.target.value)}
+                className="flex-1 bg-slate-50 border-none text-[10px] font-black tracking-widest h-14 md:h-16 rounded-xl placeholder:text-slate-300 text-slate-700 focus-visible:ring-primary/20 shadow-inner"
+              />
+              <label className="cursor-pointer">
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleGeneralImageUpload}
+                />
+                <div className={`h-14 md:h-16 px-4 rounded-xl border-2 border-dashed flex items-center justify-center transition-all ${
+                  reportImageUrl 
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-600' 
+                    : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-primary/30'
+                }`}>
+                  {uploadingId === 'general-report-image' ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : reportImageUrl ? (
+                    <div className="flex flex-col items-center">
+                       <CheckCircle2 className="w-5 h-5" />
+                       <span className="text-[7px] font-black uppercase mt-1">Uploaded</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                       <ImageIcon className="w-5 h-5" />
+                       <span className="text-[7px] font-black uppercase mt-1">Proof</span>
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
             <Button 
               disabled={basket.length === 0}
               onClick={handleSubmit}
@@ -424,12 +480,35 @@ export const DefectForm: React.FC<DefectFormProps> = ({
             />
           </div>
         </div>
-        <Input 
-          placeholder="ADDITIONAL NOTES..." 
-          value={notes} 
-          onChange={(e) => setNotes(e.target.value)}
-          className="bg-slate-50 border-none text-[10px] font-black tracking-widest h-12 rounded-xl shadow-inner"
-        />
+        <div className="flex items-center gap-2">
+          <Input 
+            placeholder="ADDITIONAL NOTES..." 
+            value={notes} 
+            onChange={(e) => setNotes(e.target.value)}
+            className="flex-1 bg-slate-50 border-none text-[10px] font-black tracking-widest h-12 rounded-xl shadow-inner"
+          />
+          <label className="cursor-pointer flex-shrink-0">
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleGeneralImageUpload}
+            />
+            <div className={`h-12 w-12 rounded-xl border-2 border-dashed flex items-center justify-center transition-all ${
+              reportImageUrl 
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-600' 
+                : 'border-slate-200 bg-slate-50 text-slate-400'
+            }`}>
+              {uploadingId === 'general-report-image' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : reportImageUrl ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <ImageIcon className="w-4 h-4" />
+              )}
+            </div>
+          </label>
+        </div>
         <Button 
           disabled={basket.length === 0}
           onClick={handleSubmit}
@@ -453,10 +532,10 @@ export const DefectForm: React.FC<DefectFormProps> = ({
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="w-full max-w-lg bg-white rounded-[2.5rem] overflow-hidden shadow-2xl ring-8 ring-white/10"
+              className="w-full max-w-lg bg-white rounded-[2.5rem] overflow-hidden shadow-2xl ring-8 ring-white/10 flex flex-col max-h-[95vh] md:max-h-[90vh]"
               onClick={e => e.stopPropagation()}
             >
-              <div className="relative aspect-square sm:aspect-[4/3] bg-slate-100">
+              <div className="relative aspect-[4/3] sm:aspect-video md:aspect-[4/3] max-h-[35vh] sm:max-h-[40vh] bg-slate-100 flex-shrink-0">
                 <img 
                   src={previewSub.imageUrl} 
                   className="w-full h-full object-cover" 
@@ -465,25 +544,25 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                 />
                 <button 
                   onClick={() => setPreviewSub(null)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all shadow-lg"
+                  className="absolute top-4 right-4 w-10 h-10 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all shadow-lg z-10"
                 >
                   <X className="w-5 h-5" />
                 </button>
-                <div className="absolute top-4 left-4">
+                <div className="absolute top-4 left-4 z-10">
                   <Badge className="bg-primary text-white border-none text-[8px] font-black tracking-widest px-3 py-1 uppercase shadow-lg">
                     {selectedCategory?.name}
                   </Badge>
                 </div>
               </div>
 
-              <div className="p-8 space-y-6">
+              <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{previewSub.name}</h3>
-                  <p className="text-sm font-medium text-slate-400 mt-2 leading-relaxed">{previewSub.description}</p>
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">{previewSub.name}</h3>
+                  <p className="text-xs sm:text-sm font-medium text-slate-400 mt-2 leading-relaxed">{previewSub.description}</p>
                 </div>
 
                 <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center gap-4">
-                  <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black">
+                  <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black flex-shrink-0 shadow-lg shadow-primary/20">
                     {activePart.charAt(0)}
                   </div>
                   <div>
@@ -491,12 +570,15 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                     <p className="text-sm font-black text-slate-900 uppercase mt-1">{activePart}</p>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex gap-3">
+              {/* Fixed Footer for Actions - Ensures visibility on short screens */}
+              <div className="p-6 sm:p-8 bg-slate-50/50 border-t border-slate-100 flex-shrink-0">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <Button 
                     variant="outline" 
                     onClick={() => setPreviewSub(null)}
-                    className="flex-1 h-16 rounded-2xl text-[10px] font-black uppercase tracking-widest border-slate-200"
+                    className="flex-1 h-14 sm:h-16 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest border-slate-200 bg-white"
                   >
                     Cancel
                   </Button>
@@ -505,7 +587,7 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                       toggleSub(previewSub);
                       setPreviewSub(null);
                     }}
-                    className={`flex-[2] h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95 ${
+                    className={`flex-[2] h-14 sm:h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95 ${
                       isSubInBasketForActive(selectedCategory?.name || '', previewSub.name)
                         ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20'
                         : 'bg-primary hover:bg-primary/95 text-white shadow-primary/20'
@@ -517,7 +599,7 @@ export const DefectForm: React.FC<DefectFormProps> = ({
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-5 h-5" /> CONFIRM & TICK
+                        <CheckCircle2 className="w-5 h-5 font-black" /> CONFIRM & TICK
                       </>
                     )}
                   </Button>

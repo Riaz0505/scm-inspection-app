@@ -226,6 +226,23 @@ const DetailModal = ({
                     </div>
                   </div>
 
+                  {report.reportImageUrl && (
+                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner overflow-hidden">
+                      <div className="flex items-center gap-2 mb-4">
+                         <div className="w-1 h-3 bg-primary rounded-full" />
+                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Inspection Evidence Photo</span>
+                      </div>
+                      <div className="aspect-video w-full rounded-2xl overflow-hidden border border-slate-200">
+                        <img 
+                          src={report.reportImageUrl} 
+                          alt="Inspection Evidence" 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {report.notes && (
                     <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner">
                       <div className="flex items-center gap-2 mb-3">
@@ -302,16 +319,26 @@ const ReportCard = ({ report, onClick }: { report: DefectReport, onClick: () => 
               {report.styleName} <span className="text-slate-300 mx-2 font-light">|</span> <span className="text-slate-500 text-sm font-bold uppercase">{report.styleId}</span>
             </h3>
             
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3 items-center">
               <Badge variant="secondary" className="text-[8px] sm:text-[10px] bg-slate-100 text-slate-600 uppercase font-black px-2 py-0.5 border-slate-200">
                 <MapPin className="w-2.5 h-2.5 sm:w-3 h-3 mr-1.5 text-primary" /> {report.part}
               </Badge>
               <Badge variant="outline" className="text-[8px] sm:text-[10px] text-slate-400 font-mono tracking-widest">
                 ID: {(report.reportId || report.id || (report as any)._id || 'N/A')?.substring(0, 8)}
               </Badge>
+              {report.reportImageUrl && (
+                <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[8px] sm:text-[9px] font-black uppercase px-2 py-0.5 flex gap-1.5 items-center">
+                  <ImageIcon className="w-2.5 h-2.5" /> Photo Proof
+                </Badge>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-start sm:items-end gap-1 flex-shrink-0">
+            {report.reportImageUrl && (
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 border-white shadow-md mb-2 group-hover:scale-105 transition-transform bg-slate-100">
+                <img src={report.reportImageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
             <div className="flex items-center gap-1.5 text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
               <Clock className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
               {new Date(report.createdAt).toLocaleDateString()}

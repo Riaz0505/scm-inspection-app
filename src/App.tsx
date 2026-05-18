@@ -413,7 +413,7 @@ export default function App() {
     }
   };
 
-  const handleDefectSubmit = async (selectedDefects: SelectedDefect[], notes: string, op?: string, opName?: string) => {
+  const handleDefectSubmit = async (selectedDefects: SelectedDefect[], notes: string, op?: string, opName?: string, reportImageUrl?: string) => {
     if (!currentStyle || selectedDefects.length === 0) return;
 
     try {
@@ -437,7 +437,8 @@ export default function App() {
         inspectorName: inspectorName || 'Unknown Inspector',
         operation: finalOp,
         operatorName: finalOpName,
-        notes
+        notes,
+        reportImageUrl: reportImageUrl || ''
       };
 
       // Submit to Firebase (Primary source of truth for the session)
