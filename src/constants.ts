@@ -5,64 +5,64 @@ export const DEFECT_CATEGORIES: DefectCategory[] = [
     name: "Fabric Issues",
     icon: "Layers",
     subCategories: [
-      { name: "Pilling", description: "Small balls forming on fabric", imageUrl: "https://picsum.photos/seed/pilling/400/300" },
-      { name: "Color Fading", description: "Color fading after wash", imageUrl: "https://picsum.photos/seed/fading/400/300" },
-      { name: "Shrinkage", description: "Size becomes smaller", imageUrl: "https://picsum.photos/seed/shrink/400/300" },
-      { name: "Uneven Dyeing", description: "Shade variation", imageUrl: "https://picsum.photos/seed/dye/400/300" },
-      { name: "Fabric Thinning", description: "Low GSM", imageUrl: "https://picsum.photos/seed/thin/400/300" },
-      { name: "Holes", description: "Weak yarn or holes", imageUrl: "https://picsum.photos/seed/hole/400/300" },
-      { name: "Fabric Twisting", description: "Twisting after wash", imageUrl: "https://picsum.photos/seed/twist/400/300" }
+      { name: "Pilling", description: "Small balls forming on fabric", imageUrl: "" },
+      { name: "Color Fading", description: "Color fading after wash", imageUrl: "" },
+      { name: "Shrinkage", description: "Size becomes smaller", imageUrl: "" },
+      { name: "Uneven Dyeing", description: "Shade variation", imageUrl: "" },
+      { name: "Fabric Thinning", description: "Low GSM", imageUrl: "" },
+      { name: "Holes", description: "Weak yarn or holes", imageUrl: "" },
+      { name: "Fabric Twisting", description: "Twisting after wash", imageUrl: "" }
     ]
   },
   {
     name: "Stitching Issues",
     icon: "Scissors",
     subCategories: [
-      { name: "Loose Threads", description: "Excessive loose threads", imageUrl: "https://picsum.photos/seed/loose/400/300" },
-      { name: "Broken Stitches", description: "Stitches snapped", imageUrl: "https://picsum.photos/seed/broken/400/300" },
-      { name: "Uneven Stitching", description: "Wavy or irregular lines", imageUrl: "https://picsum.photos/seed/uneven/400/300" },
-      { name: "Seam Puckering", description: "Wrinkled seams", imageUrl: "https://picsum.photos/seed/pucker/400/300" },
-      { name: "Skipped Stitches", description: "Missing stitches in line", imageUrl: "https://picsum.photos/seed/skipped/400/300" },
-      { name: "Open Seams", description: "Seams not closed properly", imageUrl: "https://picsum.photos/seed/openseam/400/300" }
+      { name: "Loose Threads", description: "Excessive loose threads", imageUrl: "" },
+      { name: "Broken Stitches", description: "Stitches snapped", imageUrl: "" },
+      { name: "Uneven Stitching", description: "Wavy or irregular lines", imageUrl: "" },
+      { name: "Seam Puckering", description: "Wrinkled seams", imageUrl: "" },
+      { name: "Skipped Stitches", description: "Missing stitches in line", imageUrl: "" },
+      { name: "Open Seams", description: "Seams not closed properly", imageUrl: "" }
     ]
   },
   {
     name: "Fit & Measurement",
     icon: "Ruler",
     subCategories: [
-      { name: "Size Mismatch", description: "Label vs actual size", imageUrl: "https://picsum.photos/seed/mismatch/400/300" },
-      { name: "Uneven Sleeves", description: "Sleeves different lengths", imageUrl: "https://picsum.photos/seed/sleeves/400/300" },
-      { name: "Neck Stretching", description: "Collar loose or stretched", imageUrl: "https://picsum.photos/seed/neck/400/300" },
-      { name: "Length Inconsistency", description: "Length varies from spec", imageUrl: "https://picsum.photos/seed/length/400/300" }
+      { name: "Size Mismatch", description: "Label vs actual size", imageUrl: "" },
+      { name: "Uneven Sleeves", description: "Sleeves different lengths", imageUrl: "" },
+      { name: "Neck Stretching", description: "Collar loose or stretched", imageUrl: "" },
+      { name: "Length Inconsistency", description: "Length varies from spec", imageUrl: "" }
     ]
   },
   {
     name: "Printing Issues",
     icon: "Palette",
     subCategories: [
-      { name: "Print Cracking", description: "Print splitting apart", imageUrl: "https://picsum.photos/seed/cracking/400/300" },
-      { name: "Print Peeling", description: "Print coming off", imageUrl: "https://picsum.photos/seed/peeling/400/300" },
-      { name: "Misaligned Print", description: "Print not centered", imageUrl: "https://picsum.photos/seed/misaligned/400/300" },
-      { name: "Ink Bleeding", description: "Ink spreading on fabric", imageUrl: "https://picsum.photos/seed/bleeding/400/300" }
+      { name: "Print Cracking", description: "Print splitting apart", imageUrl: "" },
+      { name: "Print Peeling", description: "Print coming off", imageUrl: "" },
+      { name: "Misaligned Print", description: "Print not centered", imageUrl: "" },
+      { name: "Ink Bleeding", description: "Ink spreading on fabric", imageUrl: "" }
     ]
   },
   {
     name: "Label & Branding",
     icon: "Tag",
     subCategories: [
-      { name: "Wrong Size Label", description: "Incorrect size tag", imageUrl: "https://picsum.photos/seed/wronglabel/400/300" },
-      { name: "Misplaced Label", description: "Label in wrong position", imageUrl: "https://picsum.photos/seed/misplaced/400/300" },
-      { name: "Itchy Neck Label", description: "Label material causing irritation", imageUrl: "https://picsum.photos/seed/itchy/400/300" }
+      { name: "Wrong Size Label", description: "Incorrect size tag", imageUrl: "" },
+      { name: "Misplaced Label", description: "Label in wrong position", imageUrl: "" },
+      { name: "Itchy Neck Label", description: "Label material causing irritation", imageUrl: "" }
     ]
   },
   {
     name: "Washing & Finishing",
     icon: "Waves",
     subCategories: [
-      { name: "Color Bleeding", description: "Color running during wash", imageUrl: "https://picsum.photos/seed/washbleed/400/300" },
-      { name: "Chemical Stains", description: "Stains from processing", imageUrl: "https://picsum.photos/seed/stains/400/300" },
-      { name: "Improper Ironing", description: "Burn marks or poor press", imageUrl: "https://picsum.photos/seed/iron/400/300" },
-      { name: "Wrinkles", description: "Poor finishing quality", imageUrl: "https://picsum.photos/seed/wrinkles/400/300" }
+      { name: "Color Bleeding", description: "Color running during wash", imageUrl: "" },
+      { name: "Chemical Stains", description: "Stains from processing", imageUrl: "" },
+      { name: "Improper Ironing", description: "Burn marks or poor press", imageUrl: "" },
+      { name: "Wrinkles", description: "Poor finishing quality", imageUrl: "" }
     ]
   }
 ];

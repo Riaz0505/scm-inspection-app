@@ -360,6 +360,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [models, setModels] = useState<IGarmentModel[]>([]);
   const [newStyle, setNewStyle] = useState<Partial<Style>>({ type: '' });
   const [newModel, setNewModel] = useState<Partial<IGarmentModel>>({ type: '', customPoints: [] });
+
+
   const [uploading, setUploading] = useState(false);
   const [dbStatus, setDbStatus] = useState<{mongo: string, mode: string} | null>(null);
 
@@ -978,16 +980,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <Card className="border-slate-200 shadow-sm overflow-hidden hover:border-primary transition-colors h-full">
                               <div className="h-32 bg-slate-100 relative overflow-hidden">
                                 <img 
-                                  src={cat.imageUrl || `https://picsum.photos/seed/${cat.name}/400/300`} 
+                                  src={cat.imageUrl || ""} 
                                   alt={cat.name} 
                                   className="w-full h-full object-cover" 
                                   referrerPolicy="no-referrer"
                                   crossOrigin="anonymous"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
-                                    if (target.src !== `https://picsum.photos/seed/${cat.name}/400/300`) {
-                                      target.src = `https://picsum.photos/seed/${cat.name}/400/300`;
-                                    }
+                                    target.src = "";
                                   }}
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
@@ -1047,7 +1047,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 overflow-hidden flex-shrink-0 bg-[url('https://placehold.co/200x200?text=Error')] bg-cover">
                                   <img 
                                     key={editingImages[`cat-${catId}`]}
-                                    src={editingImages[`cat-${catId}`] || cat.imageUrl || `https://picsum.photos/seed/${cat.name}/200`} 
+                                    src={editingImages[`cat-${catId}`] || cat.imageUrl || ""} 
                                     alt={cat.name} 
                                     className="w-full h-full object-cover" 
                                     referrerPolicy="no-referrer"
@@ -1152,7 +1152,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </CardHeader>
                 <CardContent className="p-6 space-y-5">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Model Name (e.g. Round Neck T-Shirt)</label>
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Garment Model Name (e.g. Round Neck T-Shirt)</label>
                     <Input 
                       placeholder="e.g. Round Neck T-Shirt" 
                       value={newModel.name || ''}
@@ -1161,39 +1161,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         setNewModel(p => ({ 
                           ...p, 
                           name: val,
-                          // Auto-fill type if it was empty or matched the old name
-                          type: (!p.type || p.type === p.name) ? val : p.type
+                          type: val
                         }));
                       }}
                       className="h-10 border-slate-200 focus:border-primary rounded-xl"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Garment Type / Category</label>
-                    <div className="relative group">
-                      <Input 
-                        list="garment-types"
-                        placeholder="e.g. Round Neck T-Shirt" 
-                        value={newModel.type || ''}
-                        onChange={e => setNewModel(p => ({ ...p, type: e.target.value }))}
-                        className="h-10 border-slate-200 focus:border-primary rounded-xl"
-                      />
-                      <datalist id="garment-types">
-                        <option value="Round Neck T-Shirt" />
-                        <option value="V-Neck T-Shirt" />
-                        <option value="Polo Shirt" />
-                        <option value="Hoodie" />
-                        <option value="Sweatshirt" />
-                        <option value="Track Pant" />
-                        <option value="Leggings" />
-                        <option value="Shorts" />
-                        <option value="Combo Pack" />
-                        <option value="Jeans" />
-                        <option value="Jacket" />
-                      </datalist>
-                    </div>
-                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5 pt-1">
@@ -1441,16 +1415,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </select>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Garment Type Base</label>
-                    <Input 
-                      list="garment-types"
-                      placeholder="e.g. Round Neck T-Shirt" 
-                      value={newStyle.type}
-                      onChange={e => setNewStyle(p => ({ ...p, type: e.target.value }))}
-                      className="h-10 border-slate-200 focus:border-primary rounded-xl"
-                    />
-                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5 pt-1">

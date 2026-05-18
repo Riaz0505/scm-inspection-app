@@ -152,76 +152,76 @@ const DEFAULT_CATEGORIES = [
     id: "cat-fabric",
     name: "Fabric Issues",
     icon: "Layers",
-    imageUrl: "https://picsum.photos/seed/fabric/400/300",
+    imageUrl: "",
     subCategories: [
-      { name: "Pilling", description: "Small balls forming on fabric", imageUrl: "https://picsum.photos/seed/pilling/400/300" },
-      { name: "Color Fading", description: "Color fading after wash", imageUrl: "https://picsum.photos/seed/fading/400/300" },
-      { name: "Shrinkage", description: "Size becomes smaller", imageUrl: "https://picsum.photos/seed/shrink/400/300" },
-      { name: "Uneven Dyeing", description: "Shade variation", imageUrl: "https://picsum.photos/seed/dye/400/300" },
-      { name: "Fabric Thinning", description: "Low GSM", imageUrl: "https://picsum.photos/seed/thin/400/300" },
-      { name: "Holes", description: "Weak yarn or holes", imageUrl: "https://picsum.photos/seed/hole/400/300" },
-      { name: "Fabric Twisting", description: "Twisting after wash", imageUrl: "https://picsum.photos/seed/twist/400/300" }
+      { name: "Pilling", description: "Small balls forming on fabric", imageUrl: "" },
+      { name: "Color Fading", description: "Color fading after wash", imageUrl: "" },
+      { name: "Shrinkage", description: "Size becomes smaller", imageUrl: "" },
+      { name: "Uneven Dyeing", description: "Shade variation", imageUrl: "" },
+      { name: "Fabric Thinning", description: "Low GSM", imageUrl: "" },
+      { name: "Holes", description: "Weak yarn or holes", imageUrl: "" },
+      { name: "Fabric Twisting", description: "Twisting after wash", imageUrl: "" }
     ]
   },
   {
     id: "cat-stitching",
     name: "Stitching Issues",
     icon: "Scissors",
-    imageUrl: "https://picsum.photos/seed/stitching/400/300",
+    imageUrl: "",
     subCategories: [
-      { name: "Loose Threads", description: "Excessive loose threads", imageUrl: "https://picsum.photos/seed/loose/400/300" },
-      { name: "Broken Stitches", description: "Stitches snapped", imageUrl: "https://picsum.photos/seed/broken/400/300" },
-      { name: "Uneven Stitching", description: "Wavy or irregular lines", imageUrl: "https://picsum.photos/seed/uneven/400/300" },
-      { name: "Seam Puckering", description: "Wrinkled seams", imageUrl: "https://picsum.photos/seed/pucker/400/300" },
-      { name: "Skipped Stitches", description: "Missing stitches in line", imageUrl: "https://picsum.photos/seed/skipped/400/300" },
-      { name: "Open Seams", description: "Seams not closed properly", imageUrl: "https://picsum.photos/seed/openseam/400/300" }
+      { name: "Loose Threads", description: "Excessive loose threads", imageUrl: "" },
+      { name: "Broken Stitches", description: "Stitches snapped", imageUrl: "" },
+      { name: "Uneven Stitching", description: "Wavy or irregular lines", imageUrl: "" },
+      { name: "Seam Puckering", description: "Wrinkled seams", imageUrl: "" },
+      { name: "Skipped Stitches", description: "Missing stitches in line", imageUrl: "" },
+      { name: "Open Seams", description: "Seams not closed properly", imageUrl: "" }
     ]
   },
   {
     id: "cat-fit",
     name: "Fit & Measurement",
     icon: "Ruler",
-    imageUrl: "https://picsum.photos/seed/fit/400/300",
+    imageUrl: "",
     subCategories: [
-      { name: "Size Mismatch", description: "Label vs actual size", imageUrl: "https://picsum.photos/seed/mismatch/400/300" },
-      { name: "Uneven Sleeves", description: "Sleeves different lengths", imageUrl: "https://picsum.photos/seed/sleeves/400/300" },
-      { name: "Neck Stretching", description: "Collar loose or stretched", imageUrl: "https://picsum.photos/seed/neck/400/300" },
-      { name: "Length Inconsistency", description: "Length varies from spec", imageUrl: "https://picsum.photos/seed/length/400/300" }
+      { name: "Size Mismatch", description: "Label vs actual size", imageUrl: "" },
+      { name: "Uneven Sleeves", description: "Sleeves different lengths", imageUrl: "" },
+      { name: "Neck Stretching", description: "Collar loose or stretched", imageUrl: "" },
+      { name: "Length Inconsistency", description: "Length varies from spec", imageUrl: "" }
     ]
   },
   {
     id: "cat-printing",
     name: "Printing Issues",
     icon: "Palette",
-    imageUrl: "https://picsum.photos/seed/printing/400/300",
+    imageUrl: "",
     subCategories: [
-      { name: "Print Cracking", description: "Print splitting apart", imageUrl: "https://picsum.photos/seed/cracking/400/300" },
-      { name: "Print Peeling", description: "Print coming off", imageUrl: "https://picsum.photos/seed/peeling/400/300" },
-      { name: "Misaligned Print", description: "Print not centered", imageUrl: "https://picsum.photos/seed/misaligned/400/300" },
-      { name: "Ink Bleeding", description: "Ink spreading on fabric", imageUrl: "https://picsum.photos/seed/bleeding/400/300" }
+      { name: "Print Cracking", description: "Print splitting apart", imageUrl: "" },
+      { name: "Print Peeling", description: "Print coming off", imageUrl: "" },
+      { name: "Misaligned Print", description: "Print not centered", imageUrl: "" },
+      { name: "Ink Bleeding", description: "Ink spreading on fabric", imageUrl: "" }
     ]
   },
   {
     id: "cat-label",
     name: "Label & Branding",
     icon: "Tag",
-    imageUrl: "https://picsum.photos/seed/label/400/300",
+    imageUrl: "",
     subCategories: [
-      { name: "Wrong Size Label", description: "Incorrect size tag", imageUrl: "https://picsum.photos/seed/wronglabel/400/300" },
-      { name: "Misplaced Label", description: "Label in wrong position", imageUrl: "https://picsum.photos/seed/misplaced/400/300" },
-      { name: "Itchy Neck Label", description: "Label material causing irritation", imageUrl: "https://picsum.photos/seed/itchy/400/300" }
+      { name: "Wrong Size Label", description: "Incorrect size tag", imageUrl: "" },
+      { name: "Misplaced Label", description: "Label in wrong position", imageUrl: "" },
+      { name: "Itchy Neck Label", description: "Label material causing irritation", imageUrl: "" }
     ]
   },
   {
     id: "cat-washing",
     name: "Washing & Finishing",
     icon: "Waves",
-    imageUrl: "https://picsum.photos/seed/washing/400/300",
+    imageUrl: "",
     subCategories: [
-      { name: "Color Bleeding", description: "Color running during wash", imageUrl: "https://picsum.photos/seed/washbleed/400/300" },
-      { name: "Chemical Stains", description: "Stains from processing", imageUrl: "https://picsum.photos/seed/stains/400/300" },
-      { name: "Improper Ironing", description: "Burn marks or poor press", imageUrl: "https://picsum.photos/seed/iron/400/300" },
-      { name: "Wrinkles", description: "Poor finishing quality", imageUrl: "https://picsum.photos/seed/wrinkles/400/300" }
+      { name: "Color Bleeding", description: "Color running during wash", imageUrl: "" },
+      { name: "Chemical Stains", description: "Stains from processing", imageUrl: "" },
+      { name: "Improper Ironing", description: "Burn marks or poor press", imageUrl: "" },
+      { name: "Wrinkles", description: "Poor finishing quality", imageUrl: "" }
     ]
   }
 ];
@@ -451,21 +451,25 @@ app.get("/api/debug-uploads", (req, res) => {
 app.get("/api/categories", async (req, res) => {
   try {
     let categories = [];
-    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+    const isMongoConnected = MONGODB_URI && mongoose.connection.readyState === 1;
+
+    if (isMongoConnected) {
       categories = await CategoryModel.find();
-    } else {
-      categories = readJsonFile(CATEGORIES_FILE, DEFAULT_CATEGORIES);
+      // If we have data in Mongo, use it and don't look at local files
+      if (categories.length > 0) {
+        return res.json(categories);
+      }
+      
+      // If Mongo is connected but empty, SEED it once from DEFAULT_CATEGORIES
+      console.log("⚠️ MongoDB Categories empty, seeding defaults...");
+      await CategoryModel.insertMany(DEFAULT_CATEGORIES);
+      categories = await CategoryModel.find();
+      return res.json(categories);
     }
     
-    if (categories.length === 0 && DEFAULT_CATEGORIES.length > 0) {
-      if (MONGODB_URI && mongoose.connection.readyState === 1) {
-        await CategoryModel.insertMany(DEFAULT_CATEGORIES);
-        categories = await CategoryModel.find();
-      } else {
-        fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(DEFAULT_CATEGORIES, null, 2));
-        categories = DEFAULT_CATEGORIES;
-      }
-    }
+    // If NO MongoDB is configured or it's not ready, use local JSON
+    console.log("ℹ️ Mongo not ready, using local JSON fallback for categories");
+    categories = readJsonFile(CATEGORIES_FILE, DEFAULT_CATEGORIES);
     res.json(categories);
   } catch (error) {
     console.error("Fetch Categories Error:", error);
@@ -775,40 +779,34 @@ app.post("/api/login", (req, res) => {
   }
 });
 
-if (MONGODB_URI) {
-  console.log("⏳ Attempting to connect to MongoDB...");
-  
-  const connectDB = () => {
-    mongoose.connect(MONGODB_URI)
-      .then(async () => {
-        const dbName = mongoose.connection.db?.databaseName;
-        const host = mongoose.connection.host;
-        console.log(`🟢 Connected to MongoDB Successfully!`);
-        console.log(`📡 Database: ${dbName}`);
-        console.log(`🏠 Host: ${host}`);
-      })
-      .catch(err => {
-        console.error("🔴 MongoDB connection error:", err.message);
-        console.log("⚠️ Falling back to local JSON data in /data directory");
-      });
-  };
-
-  connectDB();
-
-  mongoose.connection.on('error', (err) => {
-    console.error(`🔴 MongoDB Runtime Error: ${err.message}`);
-  });
-
-  mongoose.connection.on('disconnected', () => {
-    console.warn('🟡 MongoDB Disconnected! Attempting to reconnect in 5s...');
-    setTimeout(connectDB, 5000);
-  });
-} else {
-  console.log("ℹ️ No MONGODB_URI found in environment variables.");
-  console.log("⚠️ Using local JSON data in /data directory. If you want to use MongoDB, please set MONGODB_URI in Settings -> Secrets.");
-}
-
 async function startServer() {
+  if (MONGODB_URI) {
+    console.log("⏳ Attempting to connect to MongoDB...");
+    try {
+      await mongoose.connect(MONGODB_URI, { dbName: 'mydb', serverSelectionTimeoutMS: 5000 });
+      const dbName = mongoose.connection.db?.databaseName;
+      const host = mongoose.connection.host;
+      console.log(`🟢 Connected to MongoDB Successfully!`);
+      console.log(`📡 Database: ${dbName}`);
+      console.log(`🏠 Host: ${host}`);
+    } catch (err: any) {
+      console.error("🔴 MongoDB connection error:", err.message);
+      console.log("⚠️ Falling back to local JSON data in /data directory");
+    }
+
+    mongoose.connection.on('error', (err) => {
+      console.error(`🔴 MongoDB Runtime Error: ${err.message}`);
+    });
+
+    mongoose.connection.on('disconnected', () => {
+      console.warn('🟡 MongoDB Disconnected! Attempting to reconnect in 5s...');
+      setTimeout(() => mongoose.connect(MONGODB_URI, { dbName: 'mydb' }).catch(() => {}), 5000);
+    });
+  } else {
+    console.log("ℹ️ No MONGODB_URI found in environment variables.");
+    console.log("⚠️ Using local JSON data in /data directory.");
+  }
+
   const distPath = path.join(process.cwd(), 'dist');
   // Only serve production build if NODE_ENV is production AND dist exists.
   // Otherwise, use Vite middleware for live development.

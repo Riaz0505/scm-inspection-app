@@ -403,51 +403,8 @@ export default function App() {
         return;
       }
 
-      // 3. Style not found - ask to find or create
+      // 3. Style not found
       toast.error(`Style "${codeToSearch}" not found in database.`);
-      
-      // Optional: Ask user if they want to load a demo or check Admin
-      if (confirm(`Style "${codeToSearch}" not found. Would you like to load a demo version?`)) {
-        let dummyStyle: Style;
-        if (codeToSearch.toUpperCase().includes('SHORTS')) {
-          dummyStyle = {
-            id: 'demo-shorts',
-            barcode: codeToSearch,
-            name: 'Flex Shorts (Demo)',
-            type: 'shorts',
-            frontImageUrl: '',
-            backImageUrl: '',
-            customPoints: [
-              { id: 'F-W', label: 'WAISTBAND', x: 50, y: 15 },
-              { id: 'F-L', label: 'LEFT LEG', x: 30, y: 70 },
-              { id: 'F-R', label: 'RIGHT LEG', x: 70, y: 70 },
-              { id: 'B-P', label: 'BACK POCKET', x: 25, y: 40 },
-              { id: 'B-W', label: 'BACK WAIST', x: 50, y: 12 }
-            ]
-          };
-        } else {
-          dummyStyle = {
-            id: 'demo-tshirt',
-            barcode: codeToSearch,
-            name: 'Classic White T-Shirt (Demo)',
-            type: 'tshirt',
-            frontImageUrl: '',
-            backImageUrl: '', // Flip/rot for demo
-            customPoints: [
-              { id: 'F-A', label: 'CHEST LOGO', x: 50, y: 40 },
-              { id: 'F-B', label: 'FRONT COLLAR', x: 50, y: 15 },
-              { id: 'B-C', label: 'BACK COLLAR', x: 50, y: 12 },
-              { id: 'B-D', label: 'BACK PRINT', x: 50, y: 45 }
-            ]
-          };
-        }
-        
-        setBarcode(codeToSearch);
-        setCurrentStyle(dummyStyle);
-        setWorkflowStep('marking');
-        setIsScannerOpen(false);
-        toast.info('Demo Style Loaded');
-      }
     } catch (error) {
       console.error('Scan Error:', error);
       toast.error('Failed to resolve style');
